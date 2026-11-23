@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal de Agendas y Administración</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/admin-dark.css" />
+  <style>
+    .login-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #f0fdfa 0%, #e2e8f0 100%);
+    }
+    .login-card {
+      width: min(430px, 100%);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 30px 26px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+    }
+    .login-logo {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: var(--primary);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 28px;
+      margin: 0 auto 12px;
+    }
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      background: #ccfbf1;
+      color: #115e59;
+    }
+  </style>
+</head>
+<body>
+  <!-- ========================================================
+       VISTA 1: PANTALLA DE LOGIN (ADMINISTRADOR Y PROFESIONALES)
+       ======================================================== -->
+  <section id="loginView" class="login-shell">
+    <div class="login-card">
+      <div class="login-logo">🔐</div>
+      <h1 style="text-align:center; margin:0 0 6px; font-size:22px;" id="loginClinicName">Portal de Agendas</h1>
+      <p style="text-align:center; margin:0 0 20px; color:#475569; font-size:14px;">
+        Ingresá con tu usuario de <strong>Administrador General</strong> (toda la clínica) o de <strong>Profesional</strong> (tu propia agenda).
+      </p>
+
+      <div id="loginAlert"></div>
+
+      <form id="loginForm">
+        <div class="field" style="margin-bottom:14px;">
+          <label for="loginUsername">Usuario</label>
+          <input id="loginUsername" type="text" placeholder="Ej: admin o dra.gomez" autocomplete="username" required />
+        </div>
+        <div class="field" style="margin-bottom:18px;">
+          <label for="loginPassword">Contraseña</label>
+          <input id="loginPassword" type="password" placeholder="Tu contraseña" autocomplete="current-password" required />
+        </div>
+        <button class="btn btn-primary" type="submit" id="loginSubmitBtn" style="width:100%;">
+          🔓 Ingresar al panel
+        </button>
+      </form>
+
+      <div style="text-align:center; margin-top:18px; font-size:13px;">
+        <a href="/bot" style="color:#0f766e; text-decoration:none; font-weight:600;">← Volver al Bot de Turnos para Pacientes</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       VISTA 2: PORTAL AUTENTICADO (ADMIN GENERAL O MI AGENDA)
+       ======================================================== -->
+  <div id="portalView" class="hidden">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-icon">🏥</div>
+          <div class="brand-text">
+            <strong id="clinicName">Clínica Salud Integral</strong>
+            <span id="portalSubtitle">Panel de Gestión</span>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <button class="btn btn-primary btn-sm" id="openPatientsSearchBtn" type="button">📝 Historias</button>
+          <button class="btn btn-success btn-sm" id="openRecetariosTopBtn" type="button">💊 Recetarios</button>
+          <button class="btn btn-warning btn-sm" id="openDatabaseModalBtn" type="button" style="background:#0284c7;">📊 Base de Datos / Excel</button>
+          <span class="role-pill" id="userRolePill">Usuario</span>
+          <button class="btn btn-secondary btn-sm" id="togglePasswordBoxBtn" type="button">🔑 Mi clave</button>
+          <button class="btn btn-danger btn-sm" id="logoutBtn" type="button">🚪 Salir</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container container-wide">
+      <!-- Cambiar mi propia contraseña -->
+      <section class="card hidden" id="changePasswordCard">
+        <h3 class="card-title" style="font-size:17px;">🔑 Cambiar mi contraseña</h3>
+        <form id="changePasswordForm" class="form-grid" style="align-items:end;">
+          <div class="field">
+            <label for="curPass">Contraseña actual</label>
+            <input id="curPass" type="password" required />
+          </div>
+          <div class="field">
+            <label for="newPass">Nueva contraseña (mín. 4 caracteres)</label>
+            <input id="newPass" type="password" minlength="4" required />
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" type="submit">Guardar nueva clave</button>
+            <button class="btn btn-secondary" type="button" id="cancelPassBoxBtn">Cancelar</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Banner exclusivo para Médicos (Administradores de su propia agenda) -->
+      <section class="card hidden" id="doctorWelcomeBanner" style="background:#f0fdfa; border-color:#99f6e4;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2 class="card-title" style="margin:0;" id="doctorBannerTitle">Mi Agenda</h2>
+            <p style="margin:4px 0 0; color:#334155; font-size:14px;" id="doctorBannerSub"></p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a class="btn btn-primary btn-sm" id="doctorRequestScheduleBtn" href="/alta-profesional" target="_blank" rel="noopener">
+              📨 Informar cambio de horarios
+            </a>
+            <a class="btn btn-success btn-sm hidden" id="doctorOpenGcalBtn" href="#" target="_blank" rel="noopener">
+              📅 Abrir mi Google Calendar
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Encabezado y badges -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
+        <div>
+          <h1 style="margin:0; font-size:26px;" id="dashboardHeading">Gestión de Turnos y Agendas</h1>
+          <p style="margin:4px 0 0; color:#475569; font-size:14px;">
+            Cada cambio actualiza automáticamente Google Calendar.
+          </p>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <span class="badge badge-demo" id="gcalBadge">📅 Google Calendar: cargando...</span>
+          <span class="badge badge-demo admin-only" id="waBadge">💬 WhatsApp: cargando...</span>
+        </div>
+      </div>
+
+      <!-- Métricas -->
+      <section class="stats-grid">
+        <div class="stat-card"><span>Turnos hoy</span><strong id="statHoy">-</strong></div>
+        <div class="stat-card"><span>Confirmados (próximos)</span><strong id="statConfirmados" style="color:#15803d;">-</strong></div>
+        <div class="stat-card"><span>Sin confirmar</span><strong id="statPendientes" style="color:#b45309;">-</strong></div>
+        <div class="stat-card admin-only"><span>Profesionales activos</span><strong id="statDocs">-</strong></div>
+      </section>
+
+      <div id="adminAlert"></div>
+
+      <!-- Links limpios para compartir (SOLO ADMIN) -->
+      <section class="card admin-only" style="background:#f0f9ff; border-color:#bae6fd;">
+        <h2 class="card-title" style="margin:0 0 6px; font-size:18px;">🔗 Links para compartir</h2>
+        <p class="card-sub" style="margin-bottom:12px;">
+          Compartí el link del <strong>Bot</strong> con tus pacientes, y el link de <strong>Alta de Profesionales</strong> con médicos nuevos o que cambien sus días/horarios.
+        </p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <a class="btn btn-primary btn-sm" href="/bot" target="_blank" rel="noopener">💬 Bot de WhatsApp (Pacientes)</a>
+          <button type="button" class="btn btn-secondary btn-sm" id="copyBotLinkBtn">📋 Copiar link Bot</button>
+          <a class="btn btn-secondary btn-sm" href="/" target="_blank" rel="noopener">🌐 Turnero Web</a>
+          <a class="btn btn-success btn-sm" href="/alta-profesional" target="_blank" rel="noopener">🩺 Formulario Profesionales</a>
+          <button type="button" class="btn btn-secondary btn-sm" id="copyProfFormLinkBtn">📋 Copiar link Profesionales</button>
+          <a class="btn btn-primary btn-sm" href="/qr-clinica" target="_blank" rel="noopener">🖨️ Cartel QR para Recepción</a>
+        </div>
+      </section>
+
+      <!-- Solicitudes de Horarios enviadas por Profesionales (SOLO ADMIN) -->
+      <section class="card admin-only" id="scheduleRequestsCard">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+          <h2 class="card-title" style="margin:0;">📬 Solicitudes de Horarios de Profesionales</h2>
+          <span class="badge badge-demo" id="pendingReqBadge">0 pendientes</span>
+        </div>
+        <p class="card-sub">
+          Cuando un profesional nuevo o actual completa el enlace <strong>/alta-profesional</strong> con sus días y horas disponibles, aparece acá para que apruebes y armes su agenda en 1 clic.
+        </p>
+        <div id="scheduleRequestsList">Cargando solicitudes...</div>
+      </section>
+
+      <!-- Tabla de Turnos (Todos para Admin / Propios para Médico) -->
+      <section class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+          <h2 class="card-title" style="margin:0;" id="apptsCardTitle">📅 Turnos Agendados</h2>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input id="filterDate" type="date" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;" />
+            <select id="filterDoctor" class="admin-only" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;">
+              <option value="">Todos los profesionales</option>
+            </select>
+            <select id="filterStatus" style="padding:8px 10px; border:1px solid #cbd5e1; border-radius:8px;">
+              <option value="">Todos los estados</option>
+              <option value="reservado">⏳ Reservado (Amarillo)</option>
+              <option value="confirmado">✅ Confirmado (Verde)</option>
+              <option value="asistio">🩺 Atendido / Asistió</option>
+              <option value="cancelado">❌ Cancelado</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" id="refreshBtn" type="button">🔄 Actualizar</button>
+          </div>
+        </div>
+
+        <!-- Vista de tabla en PC -->
+        <div class="table-wrap desktop-appt-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha y hora</th>
+                <th>Paciente</th>
+                <th>Profesional</th>
+                <th>Canal</th>
+                <th>Google Calendar / Estado</th>
+                <th>Recordatorio 24h</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="appointmentsTbody">
+              <tr><td colspan="7">Cargando turnos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Vista de tarjetas táctiles en Celulares -->
+        <div class="mobile-appt-list" id="appointmentsMobileList"></div>
+      </section>
+
+      <!-- Bloqueos de Agenda (Admin: cualquier médico / Médico: su propia agenda) -->
+      <section class="card">
+        <h2 class="card-title">🔴 Bloquear horarios o días (Ausencias / Vacaciones)</h2>
+        <p class="card-sub">
+          Crea un evento rojo <strong>NO ATIENDE</strong> en Google Calendar para que el Bot deje de ofrecer esos horarios automáticamente.
+        </p>
+
+        <form id="blockForm" class="form-grid" style="align-items:end; margin-bottom:16px;">
+          <div class="field admin-only" id="blockDoctorField">
+            <label for="blockDoctor">Profesional</label>
+            <select id="blockDoctor"></select>
+          </div>
+          <div class="field">
+            <label for="blockDate">Fecha</label>
+            <input id="blockDate" type="date" required />
+          </div>
+          <div class="field">
+            <label for="blockStart">Desde</label>
+            <input id="blockStart" type="time" value="08:00" required />
+          </div>
+          <div class="field">
+            <label for="blockEnd">Hasta</label>
+            <input id="blockEnd" type="time" value="20:00" required />
+          </div>
+          <div class="field">
+            <label for="blockReason">Motivo</label>
+            <input id="blockReason" type="text" placeholder="Ej: Congreso / Vacaciones" value="No atiende" />
+          </div>
+          <div>
+            <button class="btn btn-danger" type="submit" style="width:100%;">🔴 Bloquear agenda</button>
+          </div>
+        </form>
+
+        <div id="blocksList"></div>
+      </section>
+
+      <!-- =======================================================
+           SECCIONES EXCLUSIVAS DEL ADMINISTRADOR GENERAL
+           ======================================================= -->
+
+      <!-- Gestión de Usuarios y Administradores de Agenda -->
+      <section class="card admin-only">
+        <h2 class="card-title">👥 Usuarios y Administradores de Agendas</h2>
+        <p class="card-sub">
+          Creá cuentas con usuario y contraseña para otros <strong>Administradores Generales</strong> (ven toda la clínica) o para cada <strong>Profesional</strong> (solo administra su propia agenda).
+        </p>
+
+        <div class="table-wrap" style="margin-bottom:20px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Nombre</th>
+                <th>Rol / Acceso</th>
+                <th>Agenda asignada</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:0 0 12px; font-size:17px;">➕ Crear nuevo usuario / administrador de agenda</h3>
+        <form id="newUserForm" class="form-grid" style="align-items:end;">
+          <div class="field">
+            <label for="uUsername">Usuario (para iniciar sesión)</label>
+            <input id="uUsername" type="text" placeholder="Ej: dra.torres o recepcion2" required />
+          </div>
+          <div class="field">
+            <label for="uPassword">Contraseña</label>
+            <input id="uPassword" type="password" placeholder="Mínimo 4 caracteres" minlength="4" required />
+          </div>
+          <div class="field">
+            <label for="uName">Nombre completo</label>
+            <input id="uName" type="text" placeholder="Ej: Dra. Ana Torres" required />
+          </div>
+          <div class="field">
+            <label for="uRol">Tipo de acceso</label>
+            <select id="uRol">
+              <option value="profesional">🩺 Administrador de su propia agenda</option>
+              <option value="admin">👑 Administrador General (toda la clínica)</option>
+            </select>
+          </div>
+          <div class="field" id="uDoctorField">
+            <label for="uDoctor">Profesional asignado</label>
+            <select id="uDoctor"></select>
+          </div>
+          <div>
+            <button class="btn btn-primary" type="submit" style="width:100%;">➕ Crear usuario</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Datos y Nombre de la Clínica -->
+      <section class="card admin-only">
+        <h2 class="card-title" style="margin:0 0 6px;">🏥 Nombre y datos de tu clínica</h2>
+        <p class="card-sub">Lo que guardes acá se muestra al instante en el Bot de WhatsApp, Turnero Web y comprobantes.</p>
+        <form id="clinicSettingsForm" class="form-grid" style="align-items:end;">
+          <div class="field">
+            <label for="cfgClinicName">Nombre de la clínica</label>
+            <input id="cfgClinicName" type="text" required />
+          </div>
+          <div class="field">
+            <label for="cfgClinicAddress">Dirección</label>
+            <input id="cfgClinicAddress" type="text" required />
+          </div>
+          <div class="field">
+            <label for="cfgClinicPhone">Teléfono de recepción</label>
+            <input id="cfgClinicPhone" type="text" required />
+          </div>
+          <div>
+            <button class="btn btn-primary" type="submit" style="width:100%;">💾 Guardar nombre</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Gestión de Obras Sociales y Prepagas (aparecen en Web y Bot) -->
+      <section class="card admin-only">
+        <h2 class="card-title" style="margin:0 0 6px;">🪪 Obras Sociales y Prepagas</h2>
+        <p class="card-sub">
+          Agregá o quitá coberturas médicas. Lo que cargues acá aparece automáticamente para que los pacientes elijan tanto en el <strong>Turnero Web</strong> como en el <strong>Bot de WhatsApp</strong>.
+        </p>
+
+        <div id="obrasSocialesChips" style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;"></div>
+
+        <form id="newObraSocialForm" class="form-grid" style="align-items:end;">
+          <div class="field">
+            <label for="newObraSocialName">Nueva Obra Social o Prepaga</label>
+            <input id="newObraSocialName" type="text" placeholder="Ej: OSDEPYM, Prevención Salud, Luis Pasteur..." required />
+          </div>
+          <div>
+            <button class="btn btn-primary" type="submit" style="width:100%;">➕ Agregar Obra Social</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Conectar Google Calendar en vivo -->
+      <section class="card admin-only" id="googleSetupCard">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+          <h2 class="card-title" style="margin:0;">🔗 Conexión con Google Calendar</h2>
+          <span class="badge badge-demo" id="googleSetupBadge">Sin credenciales</span>
+        </div>
+        <p class="card-sub">
+          Cargá el archivo JSON de tu <strong>Cuenta de Servicio de Google Cloud</strong> y creá los calendarios en 1 clic.
+        </p>
+
+        <div id="googleSetupInfo" class="summary-box hidden">
+          <p><strong>✅ Cuenta de servicio activa:</strong> <code id="googleSaEmail"></code>
+            <button type="button" class="btn btn-secondary btn-sm" id="copySaEmailBtn" style="margin-left:8px;">📋 Copiar email</button>
+          </p>
+
+          <div style="margin-top:14px; padding-top:14px; border-top:1px solid #99f6e4;">
+            <p style="margin:0 0 8px;"><strong>✨ Crear calendarios automáticamente para cada médico:</strong></p>
+            <div class="form-grid" style="align-items:end;">
+              <div class="field">
+                <label for="clinicOwnerGmail">Tu email de Gmail (donde querés ver las agendas)</label>
+                <input id="clinicOwnerGmail" type="email" placeholder="Ej: tuclinica@gmail.com" />
+              </div>
+              <div>
+                <button type="button" class="btn btn-success" id="autoCreateAllCalsBtn" style="width:100%;">
+                  ✨ Crear calendarios para todos los médicos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid" style="align-items:end;">
+          <div class="field">
+            <label for="googleKeyFileInput">Archivo JSON de Cuenta de Servicio (`service-account.json`)</label>
+            <input id="googleKeyFileInput" type="file" accept=".json,application/json" />
+          </div>
+          <div>
+            <button type="button" class="btn btn-primary" id="uploadGoogleKeyBtn" style="width:100%;">📤 Activar Google Calendar</button>
+          </div>
+        </div>
+        <div id="googleTestResult" style="margin-top:12px;"></div>
+      </section>
+
+      <!-- Conectar WhatsApp Real (Código QR en 10 segundos — SIN Meta) -->
+      <section class="card admin-only" id="waSetupCard">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+          <h2 class="card-title" style="margin:0;">📱 Conectar WhatsApp Real (Recordatorios 24 hs automáticos)</h2>
+          <span class="badge badge-demo" id="waSetupBadge">Desconectado</span>
+        </div>
+        <p class="card-sub">
+          Vinculá tu WhatsApp <strong>escaneando un Código QR</strong> (igual que WhatsApp Web) en 10 segundos — <strong>sin crear cuentas en Meta ni Facebook</strong>. Apenas lo escaneás, los recordatorios 24 hs antes y el bot ya funcionan en WhatsApp real.
+        </p>
+
+        <!-- Bloque principal: QR súper simple -->
+        <div id="waQrBox" class="summary-box" style="margin-bottom:16px;">
+          <div id="waQrConnectedInfo" class="hidden" style="margin-bottom:10px;">
+            <strong style="color:#15803d; font-size:16px;">✅ ¡WhatsApp Real Conectado!</strong>
+            <div id="waQrConnectedPhone" style="font-size:14px; color:#334155; margin-top:4px;"></div>
+            <div style="font-size:12px; color:#475569; margin-top:4px;">
+              Los recordatorios 24 hs antes ya salen automáticamente desde este WhatsApp, y los pacientes pueden responder <strong>1 (Confirmar)</strong>, <strong>2 (Modificar)</strong> o <strong>3 (Cancelar)</strong>.
+            </div>
+          </div>
+
+          <div id="waQrImageWrap" class="hidden" style="text-align:center; padding:12px 0;">
+            <p style="margin:0 0 10px; font-weight:700; color:#0f766e;">
+              📲 Abrí WhatsApp en tu celular → tocá ⋮ (o Configuración) → Dispositivos vinculados → Vincular un dispositivo → escaneá este QR:
+            </p>
+            <img id="waQrImg" src="" alt="Código QR de WhatsApp" style="width:240px; height:240px; border:6px solid #fff; border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,0.12);" />
+            <div style="font-size:12px; color:#475569; margin-top:8px;">⏳ Esperando que escanees el código... (se actualiza solo)</div>
+          </div>
+
+          <div id="waQrStatusMsg" style="font-size:13px; color:#475569; margin-bottom:10px;"></div>
+
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button type="button" class="btn btn-success" id="waQrConnectBtn">📷 Generar Código QR para conectar WhatsApp</button>
+            <button type="button" class="btn btn-danger btn-sm hidden" id="waQrDisconnectBtn">🔌 Desvincular WhatsApp</button>
+          </div>
+        </div>
+
+        <!-- Prueba instantánea a tu celular -->
+        <div id="waTestPanel" style="padding-top:10px; border-top:1px solid #e2e8f0;">
+          <p style="margin:0 0 8px; font-size:14px;"><strong>🧪 Probá enviarte un WhatsApp real ahora mismo:</strong></p>
+          <div class="form-grid" style="align-items:end;">
+            <div class="field">
+              <label for="waTestPhoneInput">Número de WhatsApp destino (con código de país)</label>
+              <input id="waTestPhoneInput" type="tel" value="5493476582815" placeholder="Ej: 5493476582815" />
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary" id="waTestHelloBtn" style="flex:1;">📲 Enviarme mensaje de prueba ahora</button>
+              <button type="button" class="btn btn-secondary btn-sm hidden" id="waTestButtonsBtn">💬 Probar botones Meta</button>
+            </div>
+          </div>
+        </div>
+        <div id="waTestResult" style="margin-top:12px;"></div>
+
+        <!-- Opción avanzada oculta (Meta Cloud API) -->
+        <details style="margin-top:16px; padding-top:12px; border-top:1px solid #e2e8f0;">
+          <summary style="cursor:pointer; font-size:13px; font-weight:600; color:#64748b;">
+            ⚙️ Opción avanzada (opcional): Conectar mediante Meta WhatsApp Cloud API
+          </summary>
+          <div style="margin-top:12px;">
+            <div class="summary-box" style="margin-bottom:12px;">
+              <p style="margin:4px 0; font-size:12px;">
+                <strong>URL Webhook:</strong> <code id="waWebhookUrl" style="word-break:break-all;"></code>
+                <button type="button" class="btn btn-secondary btn-sm" id="copyWaWebhookBtn" style="margin-left:6px;">📋 Copiar</button>
+              </p>
+              <p style="margin:4px 0; font-size:12px;">
+                <strong>Token verificación:</strong> <code id="waVerifyTokenPreview">mi_token_secreto_clinica_2026</code>
+                <button type="button" class="btn btn-secondary btn-sm" id="copyWaVerifyBtn" style="margin-left:6px;">📋 Copiar</button>
+              </p>
+            </div>
+            <form id="waConfigForm">
+              <div class="form-grid" style="align-items:end;">
+                <div class="field">
+                  <label for="waPhoneNumberIdInput">Phone Number ID</label>
+                  <input id="waPhoneNumberIdInput" type="text" placeholder="Ej: 482910384756123" />
+                </div>
+                <div class="field">
+                  <label for="waAccessTokenInput">Access Token de Meta</label>
+                  <input id="waAccessTokenInput" type="password" placeholder="EAAG..." />
+                  <div class="hint" id="waTokenHint">Opcional si ya usás Código QR.</div>
+                </div>
+                <div class="field">
+                  <label for="waTemplateInput">Plantilla 24 hs</label>
+                  <input id="waTemplateInput" type="text" value="recordatorio_turno_24h" />
+                </div>
+                <div class="field">
+                  <label for="waLangInput">Idioma plantilla</label>
+                  <select id="waLangInput">
+                    <option value="es_AR">es_AR</option>
+                    <option value="es">es</option>
+                    <option value="en_US">en_US</option>
+                  </select>
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;">
+                <button type="submit" class="btn btn-secondary btn-sm">💾 Guardar credenciales Meta</button>
+                <button type="button" class="btn btn-secondary btn-sm hidden" id="waDisconnectBtn">Desconectar Meta</button>
+              </div>
+            </form>
+          </div>
+        </details>
+      </section>
+
+      <!-- Profesionales y Google Calendar IDs -->
+      <section class="card admin-only">
+        <h2 class="card-title">👨‍⚕️ Profesionales, Horarios de Atención y Google Calendar</h2>
+        <p class="card-sub">
+          Tocá <strong>🗓️ Horarios</strong> en cualquier profesional para cargar los días y horarios en los que atiende (y cuánto dura cada turno). El Bot y el Turnero Web ofrecen turnos automáticamente según lo que cargues acá.
+        </p>
+
+        <div class="table-wrap" style="margin-bottom:20px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Profesional</th>
+                <th>Especialidad</th>
+                <th>Horarios de atención</th>
+                <th>Consultorio</th>
+                <th>Google Calendar ID</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="doctorsTbody"></tbody>
+          </table>
+        </div>
+
+        <h3 style="margin:0 0 12px; font-size:17px;">➕ Agregar nuevo profesional</h3>
+        <form id="newDoctorForm" class="form-grid" style="align-items:end;">
+          <div class="field">
+            <label for="docName">Nombre completo</label>
+            <input id="docName" type="text" placeholder="Ej: Dra. Ana Torres" required />
+          </div>
+          <div class="field">
+            <label for="docSpec" style="display:flex; justify-content:space-between; align-items:center; gap:6px; flex-wrap:wrap;">
+              <span>Especialidad</span>
+              <span style="display:flex; gap:4px;">
+                <button type="button" id="toggleEditSpecIconBtn" class="btn btn-secondary btn-sm" style="padding:2px 8px; font-size:12px;" title="Cambiar el ícono de la especialidad seleccionada">
+                  🎨 Ícono
+                </button>
+                <button type="button" id="toggleNewSpecBtn" class="btn btn-secondary btn-sm" style="padding:2px 8px; font-size:12px;">
+                  ➕ Nueva
+                </button>
+              </span>
+            </label>
+            <select id="docSpec" required></select>
+          </div>
+
+          <!-- Cambiar ícono de la especialidad seleccionada -->
+          <div id="editSpecIconBox" class="summary-box hidden" style="grid-column: 1 / -1; margin:4px 0;">
+            <p style="margin:0 0 8px;"><strong>🎨 Elegir ícono para: <span id="editSpecIconTitle"></span></strong></p>
+            <div id="editSpecIconPalette" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+            <div class="form-grid" style="align-items:end;">
+              <div class="field">
+                <label for="editSpecIconInput">Ícono elegido (podés tocar uno arriba o pegar cualquier emoji)</label>
+                <input id="editSpecIconInput" type="text" maxlength="8" style="font-size:20px; width:120px; text-align:center;" />
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button type="button" id="saveEditSpecIconBtn" class="btn btn-success">💾 Guardar ícono</button>
+                <button type="button" id="cancelEditSpecIconBtn" class="btn btn-secondary">Cerrar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cargar una nueva especialidad con ícono personalizable -->
+          <div id="newSpecBox" class="summary-box hidden" style="grid-column: 1 / -1; margin:4px 0;">
+            <p style="margin:0 0 10px;"><strong>➕ Cargar nueva especialidad</strong></p>
+            <div id="newSpecIconPalette" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;"></div>
+            <div class="form-grid" style="align-items:end;">
+              <div class="field">
+                <label for="newSpecName">Nombre de la especialidad</label>
+                <input id="newSpecName" type="text" placeholder="Ej: Oftalmología, Nutrición, Flebología..." />
+              </div>
+              <div class="field">
+                <label for="newSpecIcon">Ícono elegido (tocá uno o pegá emoji)</label>
+                <input id="newSpecIcon" type="text" value="🩺" maxlength="8" style="font-size:20px; text-align:center;" />
+              </div>
+              <div class="field">
+                <label for="newSpecDesc">Descripción breve (opcional)</label>
+                <input id="newSpecDesc" type="text" placeholder="Ej: Consultas y controles" />
+              </div>
+              <div style="display:flex; gap:8px;">
+                <button type="button" id="saveNewSpecBtn" class="btn btn-success" style="flex:1;">✅ Crear especialidad</button>
+                <button type="button" id="cancelNewSpecBtn" class="btn btn-secondary">Cancelar</button>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="docRoom">Consultorio</label>
+            <input id="docRoom" type="text" value="Consultorio 3 - Planta Baja" />
+          </div>
+          <div class="field">
+            <label for="docDuration">Duración turno (min)</label>
+            <select id="docDuration">
+              <option value="15">15 min</option>
+              <option value="20">20 min</option>
+              <option value="30" selected>30 min</option>
+              <option value="45">45 min</option>
+              <option value="60">60 min</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="docGcal">Google Calendar ID (opcional)</label>
+            <input id="docGcal" type="text" placeholder="Luego podés crearlo con ✨ Crear" />
+          </div>
+          <div>
+            <button class="btn btn-primary" type="submit" style="width:100%;">➕ Agregar profesional</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <!-- ========================================================
+       MODAL 1: HISTORIA CLÍNICA Y REGISTRO DE ATENCIÓN
+       ======================================================== -->
+  <div id="clinicalModal" class="modal-backdrop hidden">
+    <div class="modal-panel">
+      <div class="modal-header">
+        <div>
+          <h2 id="clinicalModalTitle">📝 Registro de Atención</h2>
+          <div id="clinicalModalSub" style="font-size:12px; opacity:.9;"></div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button type="button" class="btn btn-success btn-sm" id="clinicalOpenRecetarioBtn">💊 Recetario</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="clinicalPrintBtn" title="Imprimir historia clínica">🖨️</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="closeClinicalModalBtn">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div id="clinicalPatientBanner" class="summary-box"></div>
+        <div id="clinicalAlert"></div>
+
+        <form id="clinicalRecordForm" style="margin-bottom:24px;">
+          <h3 style="margin:0 0 12px; font-size:16px;">➕ Nueva evolución / atención</h3>
+          <div class="form-grid" style="margin-bottom:12px;">
+            <div class="field">
+              <label for="recMotivo">Motivo de consulta</label>
+              <input id="recMotivo" type="text" placeholder="Ej: Control anual, cefalea, dolor lumbar..." />
+            </div>
+            <div class="field">
+              <label for="recSignos">Signos vitales / Examen físico (opcional)</label>
+              <input id="recSignos" type="text" placeholder="Ej: TA 120/80, FC 72, T° 36.5°C, Peso 70kg" />
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="recDiagnostico">Diagnóstico / Impresión diagnóstica</label>
+              <input id="recDiagnostico" type="text" placeholder="Ej: Hipertensión arterial controlada / Lumbalgia mecánica" />
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="recEvolucion">Evolución y descripción completa de la atención *</label>
+              <textarea id="recEvolucion" rows="4" placeholder="Describí antecedentes relevantes, hallazgos del examen, evolución clínica y observaciones importantes..." required></textarea>
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="recIndicaciones">Indicaciones, medicación y estudios solicitados</label>
+              <textarea id="recIndicaciones" rows="3" placeholder="Ej: Enalapril 10mg 1 comp/día, laboratorio completo, control en 30 días..."></textarea>
+            </div>
+            <div class="field">
+              <label for="recPlataforma">Recetario usado (opcional)</label>
+              <select id="recPlataforma">
+                <option value="">Sin receta / No especificado</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="recCodigo">N° de Receta Electrónica / CUIR (opcional)</label>
+              <input id="recCodigo" type="text" placeholder="Ej: CUIR-123456 o N° de orden" />
+            </div>
+
+            <!-- Copago -->
+            <div class="summary-box" style="grid-column: 1 / -1; margin:4px 0; background:#fffbeb; border-color:#fcd34d;">
+              <p style="margin:0 0 8px;"><strong>💵 Copago / Arancel abonado en esta consulta</strong></p>
+              <div class="form-grid" style="align-items:end;">
+                <div class="field">
+                  <label for="recAbonoCopago">¿Tuvo que abonar copago?</label>
+                  <select id="recAbonoCopago">
+                    <option value="0">No abonó copago</option>
+                    <option value="1">Sí, abonó copago</option>
+                  </select>
+                </div>
+                <div class="field hidden" id="recMontoCopagoWrap">
+                  <label for="recMontoCopago">¿Cuánto abonó? ($)</label>
+                  <input id="recMontoCopago" type="number" min="0" step="100" placeholder="Ej: 5000" />
+                </div>
+                <div class="field hidden" id="recMedioPagoWrap">
+                  <label for="recMedioPago">Medio de pago</label>
+                  <select id="recMedioPago">
+                    <option value="Efectivo">Efectivo</option>
+                    <option value="Transferencia">Transferencia</option>
+                    <option value="Mercado Pago">Mercado Pago</option>
+                    <option value="Débito">Tarjeta de Débito</option>
+                    <option value="Crédito">Tarjeta de Crédito</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="field" style="grid-column: 1 / -1;">
+              <label for="recProximo">Próximo control / Seguimiento (opcional)</label>
+              <input id="recProximo" type="text" placeholder="Ej: Volver en 15 días con resultados de laboratorio" />
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+            <label id="recMarcarAsistioWrap" style="display:flex; align-items:center; gap:8px; font-size:14px; font-weight:600; cursor:pointer;">
+              <input type="checkbox" id="recMarcarAsistio" checked style="width:18px; height:18px;" />
+              Marcar este turno como "Atendido / Asistió"
+            </label>
+            <button type="submit" class="btn btn-primary" id="saveClinicalRecordBtn">💾 Guardar atención en Historia Clínica</button>
+          </div>
+        </form>
+
+        <hr style="border:none; border-top:1px solid #e2e8f0; margin:18px 0;" />
+
+        <h3 style="margin:0 0 12px; font-size:16px;">📚 Historial de atenciones previas</h3>
+        <div id="clinicalHistoryList">Cargando historial...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 2: BUSCADOR DE PACIENTES / HISTORIAS CLÍNICAS
+       ======================================================== -->
+  <div id="patientSearchModal" class="modal-backdrop hidden">
+    <div class="modal-panel" style="width:min(680px, 100%);">
+      <div class="modal-header">
+        <h2>📋 Historias Clínicas de Pacientes</h2>
+        <button type="button" class="btn btn-secondary btn-sm" id="closePatientSearchBtn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field" style="margin-bottom:14px;">
+          <input id="patientSearchInput" type="search" placeholder="🔍 Buscar paciente por DNI o Nombre y Apellido..." />
+        </div>
+        <div id="patientSearchResults">Cargando pacientes...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 3: CENTRAL DE RECETARIOS ELECTRÓNICOS (ReNaPDiS)
+       ======================================================== -->
+  <div id="recetariosModal" class="modal-backdrop hidden">
+    <div class="modal-panel" style="width:min(1040px, 100%);">
+      <div class="modal-header" style="background:#15803d;">
+        <div>
+          <h2>💊 Central de Recetarios Electrónicos (ReNaPDiS)</h2>
+          <div style="font-size:12px; opacity:.9;">
+            Elegí la plataforma según la obra social o prepaga sin abrir múltiples pestañas
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="closeRecetariosModalBtn">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Contexto del paciente (si se abrió desde un turno o historia clínica) -->
+        <div id="recetarioPatientBar" class="summary-box hidden" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div id="recetarioPatientInfo"></div>
+          <button type="button" class="btn btn-primary btn-sm" id="copyPatientForRxBtn">📋 Copiar datos del paciente</button>
+        </div>
+
+        <!-- Filtro de cobertura y modo de apertura -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+            <label for="recetarioFilterOs" style="font-size:13px; font-weight:700;">Filtrar por cobertura:</label>
+            <select id="recetarioFilterOs" style="padding:7px 10px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px;">
+              <option value="">Todas las plataformas</option>
+            </select>
+          </div>
+          <label style="display:flex; align-items:center; gap:6px; font-size:13px; cursor:pointer; color:#334155;">
+            <input type="checkbox" id="recetarioTryIframe" />
+            Intentar abrir visor aquí dentro (si el sitio lo permite)
+          </label>
+        </div>
+
+        <div id="recetariosAlert"></div>
+
+        <!-- Lista de plataformas -->
+        <div id="recetariosGrid" class="recetario-grid">Cargando recetarios...</div>
+
+        <!-- Visor integrado opcional (iframe) -->
+        <div id="recetarioIframeBox" class="recetario-iframe-box hidden">
+          <div class="recetario-iframe-bar">
+            <span id="recetarioIframeTitle">Plataforma cargada</span>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn btn-success btn-sm" id="recetarioIframePopoutBtn">🪟 Abrir en Ventana Única</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="closeRecetarioIframeBtn">Cerrar visor</button>
+            </div>
+          </div>
+          <div style="background:#fef3c7; color:#92400e; font-size:12px; padding:6px 12px;">
+            ℹ️ Si esta plataforma aparece en blanco por seguridad del sitio (ej. PAMI/OSDE), tocá <strong>"🪟 Abrir en Ventana Única"</strong>: siempre reutiliza la misma ventana sin acumular pestañas.
+          </div>
+          <iframe id="recetarioIframe" src="about:blank" title="Recetario Electrónico"></iframe>
+        </div>
+
+        <!-- Solo Admin: agregar una plataforma / app de recetario personalizada -->
+        <div class="admin-only" style="margin-top:20px; padding-top:16px; border-top:1px solid #e2e8f0;">
+          <h3 style="margin:0 0 10px; font-size:15px;">➕ Agregar otra plataforma o recetario (Solo Administrador)</h3>
+          <form id="newRecetarioForm" class="form-grid" style="align-items:end;">
+            <div class="field">
+              <label for="rxName">Nombre de la plataforma</label>
+              <input id="rxName" type="text" placeholder="Ej: Colegio Médico Receta / RecetAR" required />
+            </div>
+            <div class="field">
+              <label for="rxUrl">URL / Enlace</label>
+              <input id="rxUrl" type="url" placeholder="https://..." required />
+            </div>
+            <div class="field">
+              <label for="rxCoberturas">Obras sociales / Prepagas</label>
+              <input id="rxCoberturas" type="text" placeholder="Ej: Todas o IOMA, OSDE, Medifé" value="Todas" />
+            </div>
+            <div class="field">
+              <label for="rxCategoria">Categoría</label>
+              <select id="rxCategoria">
+                <option value="ReNaPDiS">Homologada ReNaPDiS</option>
+                <option value="Obra Social">Obra Social</option>
+                <option value="Prepaga">Prepaga</option>
+                <option value="Oficial">Portal Oficial</option>
+              </select>
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary" style="width:100%;">➕ Guardar enlace</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 4: CONFIGURAR HORARIOS DE ATENCIÓN DEL PROFESIONAL
+       ======================================================== -->
+  <div id="scheduleModal" class="modal-backdrop hidden">
+    <div class="modal-panel" style="width:min(760px, 100%);">
+      <div class="modal-header">
+        <div>
+          <h2 id="scheduleModalTitle">🗓️ Horarios de Atención</h2>
+          <div id="scheduleModalSub" style="font-size:12px; opacity:.9;">
+            Elegí los días, franjas horarias y duración de cada turno
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="closeScheduleModalBtn">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="scheduleAlert"></div>
+
+        <div class="summary-box" style="margin-bottom:16px;">
+          <div class="form-grid" style="align-items:end;">
+            <div class="field">
+              <label for="schedDuration">⏱️ Duración de cada turno</label>
+              <select id="schedDuration">
+                <option value="15">15 minutos</option>
+                <option value="20">20 minutos</option>
+                <option value="30">30 minutos</option>
+                <option value="40">40 minutos</option>
+                <option value="45">45 minutos</option>
+                <option value="60">60 minutos (1 hora)</option>
+              </select>
+            </div>
+            <div style="font-size:13px; color:#334155;">
+              El Turnero Web y el Bot de WhatsApp dividirán automáticamente las franjas que elijas abajo en turnos de esta duración (descontando turnos ya tomados y bloqueos de Google Calendar).
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
+          <button type="button" class="btn btn-secondary btn-sm" id="presetAllDaysBtn">⚡ Todos los días (08:00–20:00)</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="presetMonSatBtn">⚡ Lun a Sáb (09:00–19:00)</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="presetMonFriBtn">⚡ Lun a Vie (Mañana y Tarde)</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="presetClearDaysBtn">🧹 Limpiar</button>
+        </div>
+
+        <form id="scheduleForm">
+          <div id="scheduleDaysContainer" style="display:flex; flex-direction:column; gap:10px;"></div>
+
+          <div class="actions-row" style="margin-top:20px;">
+            <button type="button" class="btn btn-secondary" id="cancelScheduleBtn">Cancelar</button>
+            <button type="submit" class="btn btn-success" id="saveScheduleBtn">💾 Guardar horarios de atención</button>
+          </div>
+        </form>
+
+        <hr style="border:none; border-top:1px solid #e2e8f0; margin:20px 0;" />
+
+        <div>
+          <h3 style="margin:0 0 6px; font-size:16px;">📅 Cambio puntual para una fecha específica</h3>
+          <p style="margin:0 0 12px; font-size:13px; color:#475569;">
+            Si este médico cambia su horario <strong>solo por un día puntual</strong> (ej. atiende un sábado o cambia una fecha), cargalo acá sin modificar el resto de sus semanas:
+          </p>
+          <form id="specialHourForm" class="form-grid" style="align-items:end; margin-bottom:12px;">
+            <div class="field">
+              <label for="spDate">Fecha puntual</label>
+              <input id="spDate" type="date" required />
+            </div>
+            <div class="field">
+              <label for="spStart">Desde</label>
+              <input id="spStart" type="time" value="09:00" required />
+            </div>
+            <div class="field">
+              <label for="spEnd">Hasta</label>
+              <input id="spEnd" type="time" value="13:00" required />
+            </div>
+            <div class="field">
+              <label for="spNote">Aclaración (opcional)</label>
+              <input id="spNote" type="text" placeholder="Ej: Atención especial sábado" />
+            </div>
+            <div>
+              <button type="submit" class="btn btn-primary btn-sm" style="width:100%; padding:11px;">➕ Habilitar fecha</button>
+            </div>
+          </form>
+          <div id="specialHoursList"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 5: BASE DE DATOS (PACIENTES, PROFESIONALES, COPAGOS) Y EXCEL
+       ======================================================== -->
+  <div id="databaseModal" class="modal-backdrop hidden">
+    <div class="modal-panel" style="width:min(1120px, 100%);">
+      <div class="modal-header" style="background:#0284c7;">
+        <div>
+          <h2>📊 Base de Datos Clínica y Exportación a Excel</h2>
+          <div style="font-size:12px; opacity:.9;">
+            Registro completo de Pacientes, Profesionales, Atenciones, Copagos y reportes .xlsx
+          </div>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <a href="/api/panel/export/excel?type=completo" class="btn btn-success btn-sm admin-only" id="exportFullExcelBtn">📥 Excel Completo (3 hojas)</a>
+          <button type="button" class="btn btn-secondary btn-sm" id="closeDatabaseModalBtn">✕</button>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <!-- Pestañas -->
+        <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px;">
+          <button type="button" class="tab-btn active" id="dbTabPatientsBtn" style="padding:8px 16px; font-size:14px;">👥 Base de Pacientes</button>
+          <button type="button" class="tab-btn admin-only" id="dbTabDoctorsBtn" style="padding:8px 16px; font-size:14px;">🩺 Base de Profesionales</button>
+          <button type="button" class="tab-btn" id="dbTabAttentionsBtn" style="padding:8px 16px; font-size:14px;">📋 Atenciones y Copagos</button>
+        </div>
+
+        <div id="dbModalAlert"></div>
+
+        <!-- TAB 1: BASE DE PACIENTES -->
+        <section id="dbTabPatients">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+            <div style="display:flex; gap:8px; flex-wrap:wrap; flex:1; min-width:220px;">
+              <input id="dbPatientSearch" type="search" placeholder="🔍 Buscar por Nombre, DNI, Domicilio o Localidad..." style="flex:1; min-width:200px; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px;" />
+              <select id="dbPatientFilterOs" style="padding:9px 10px; border:1px solid #cbd5e1; border-radius:8px;">
+                <option value="">Todas las Obras Sociales</option>
+              </select>
+            </div>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary btn-sm" id="dbNewPatientBtn">➕ Nuevo Paciente</button>
+              <a href="/api/panel/export/excel?type=pacientes" class="btn btn-success btn-sm admin-only" id="exportPatientsExcelBtn">📥 Exportar Excel</a>
+            </div>
+          </div>
+
+          <!-- Formulario crear/editar ficha completa del paciente -->
+          <div id="dbPatientFormBox" class="summary-box hidden" style="margin-bottom:16px;">
+            <h3 style="margin:0 0 10px; font-size:16px;" id="dbPatientFormTitle">➕ Nuevo Paciente</h3>
+            <form id="dbPatientForm">
+              <input type="hidden" id="dbPatId" value="" />
+              <div class="form-grid">
+                <div class="field">
+                  <label for="dbPatName">Nombre y Apellido *</label>
+                  <input id="dbPatName" type="text" required />
+                </div>
+                <div class="field">
+                  <label for="dbPatDni">DNI *</label>
+                  <input id="dbPatDni" type="text" inputmode="numeric" required />
+                </div>
+                <div class="field">
+                  <label for="dbPatDob">Fecha de nacimiento</label>
+                  <input id="dbPatDob" type="date" />
+                </div>
+                <div class="field">
+                  <label for="dbPatOs">Obra Social / Prepaga</label>
+                  <select id="dbPatOs"></select>
+                </div>
+                <div class="field">
+                  <label for="dbPatAfiliado">N° de Afiliado (opcional)</label>
+                  <input id="dbPatAfiliado" type="text" placeholder="Ej: 123456-00" />
+                </div>
+                <div class="field">
+                  <label for="dbPatPhone">WhatsApp / Teléfono</label>
+                  <input id="dbPatPhone" type="tel" placeholder="Ej: 3476582815" />
+                </div>
+                <div class="field">
+                  <label for="dbPatAddress">Domicilio</label>
+                  <input id="dbPatAddress" type="text" placeholder="Ej: San Martín 450" />
+                </div>
+                <div class="field">
+                  <label for="dbPatCity">Localidad</label>
+                  <input id="dbPatCity" type="text" placeholder="Ej: San Lorenzo / Rosario" />
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; margin-top:12px;">
+                <button type="submit" class="btn btn-success btn-sm">💾 Guardar ficha del paciente</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="dbCancelPatientFormBtn">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="dbPatientsList">Cargando base de pacientes...</div>
+        </section>
+
+        <!-- TAB 2: BASE DE PROFESIONALES (SOLO ADMIN) -->
+        <section id="dbTabDoctors" class="hidden">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:14px;">
+            <input id="dbDoctorSearch" type="search" placeholder="🔍 Buscar profesional por Nombre, DNI, Matrícula o Especialidad..." style="flex:1; min-width:220px; padding:9px 12px; border:1px solid #cbd5e1; border-radius:8px;" />
+            <a href="/api/panel/export/excel?type=profesionales" class="btn btn-success btn-sm" id="exportDoctorsExcelBtn">📥 Exportar Profesionales (.xlsx)</a>
+          </div>
+
+          <!-- Formulario editar ficha personal completa del profesional -->
+          <div id="dbDoctorFormBox" class="summary-box hidden" style="margin-bottom:16px;">
+            <h3 style="margin:0 0 10px; font-size:16px;" id="dbDoctorFormTitle">✏️ Ficha completa del Profesional</h3>
+            <form id="dbDoctorForm">
+              <input type="hidden" id="dbDocId" value="" />
+              <div class="form-grid">
+                <div class="field">
+                  <label for="dbDocName">Nombre y Apellido *</label>
+                  <input id="dbDocName" type="text" required />
+                </div>
+                <div class="field">
+                  <label for="dbDocDni">DNI</label>
+                  <input id="dbDocDni" type="text" inputmode="numeric" placeholder="Ej: 28123456" />
+                </div>
+                <div class="field">
+                  <label for="dbDocDob">Fecha de nacimiento</label>
+                  <input id="dbDocDob" type="date" />
+                </div>
+                <div class="field">
+                  <label for="dbDocMatricula">Matrícula (MN / MP)</label>
+                  <input id="dbDocMatricula" type="text" placeholder="Ej: MP 12345" />
+                </div>
+                <div class="field">
+                  <label for="dbDocSpec">Especialidad</label>
+                  <select id="dbDocSpec"></select>
+                </div>
+                <div class="field">
+                  <label for="dbDocPhone">Teléfono / WhatsApp</label>
+                  <input id="dbDocPhone" type="tel" />
+                </div>
+                <div class="field">
+                  <label for="dbDocAddress">Domicilio</label>
+                  <input id="dbDocAddress" type="text" placeholder="Ej: Belgrano 320" />
+                </div>
+                <div class="field">
+                  <label for="dbDocCity">Localidad</label>
+                  <input id="dbDocCity" type="text" placeholder="Ej: San Lorenzo / Rosario" />
+                </div>
+                <div class="field">
+                  <label for="dbDocEmail">Email</label>
+                  <input id="dbDocEmail" type="email" />
+                </div>
+                <div class="field" style="grid-column: 1 / -1;">
+                  <label for="dbDocObras">Obras Sociales y Prepagas con las que trabaja</label>
+                  <input id="dbDocObras" type="text" placeholder="Ej: Particular, OSDE, Swiss Medical, IOMA, PAMI..." />
+                </div>
+              </div>
+              <div style="display:flex; gap:8px; margin-top:12px;">
+                <button type="submit" class="btn btn-success btn-sm">💾 Guardar datos del profesional</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="dbCancelDoctorFormBtn">Cancelar</button>
+              </div>
+            </form>
+          </div>
+
+          <div id="dbDoctorsList">Cargando base de profesionales...</div>
+        </section>
+
+        <!-- TAB 3: REPORTE DE ATENCIONES Y COPAGOS -->
+        <section id="dbTabAttentions" class="hidden">
+          <div class="form-grid" style="align-items:end; margin-bottom:14px;">
+            <div class="field">
+              <label for="repDesde">Desde fecha</label>
+              <input id="repDesde" type="date" />
+            </div>
+            <div class="field">
+              <label for="repHasta">Hasta fecha</label>
+              <input id="repHasta" type="date" />
+            </div>
+            <div class="field admin-only">
+              <label for="repDoctor">Médico</label>
+              <select id="repDoctor"><option value="">Todos los médicos</option></select>
+            </div>
+            <div class="field">
+              <label for="repOs">Obra Social</label>
+              <select id="repOs"><option value="">Todas</option></select>
+            </div>
+            <div class="field">
+              <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="checkbox" id="repSoloCopago" style="width:18px; height:18px;" />
+                Solo con copago
+              </label>
+            </div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-primary btn-sm" id="repFilterBtn">🔍 Filtrar</button>
+              <button type="button" class="btn btn-success btn-sm" id="exportAttentionsExcelBtn">📥 Exportar Excel (.xlsx)</button>
+            </div>
+          </div>
+
+          <div class="stats-grid" style="margin-bottom:14px;">
+            <div class="stat-card"><span>Atenciones en reporte</span><strong id="repStatTotal">0</strong></div>
+            <div class="stat-card"><span>Con copago</span><strong id="repStatConCopago" style="color:#b45309;">0</strong></div>
+            <div class="stat-card"><span>Total recaudado copagos</span><strong id="repStatMonto" style="color:#15803d;">$0</strong></div>
+          </div>
+
+          <div id="dbAttentionsList">Cargando atenciones...</div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="/manifest-web.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <title>Turnero Online — Clínica Salud Integral</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="/" class="brand">
+        <div class="brand-icon">🏥</div>
+        <div class="brand-text">
+          <strong id="clinicName">Clínica Salud Integral</strong>
+          <span id="clinicAddress">Av. Corrientes 1450, CABA</span>
+        </div>
+      </a>
+      <nav class="nav-links">
+        <a href="/bot" class="nav-link">💬 Sacar turno por WhatsApp Bot</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <h1>Sacá tu turno médico en menos de 1 minuto</h1>
+      <p>Elegí la especialidad, el profesional, el día y la hora. Un día antes te recordamos por WhatsApp.</p>
+    </section>
+
+    <div class="tabs">
+      <button class="tab-btn active" id="tabBook" type="button">📅 Sacar un turno nuevo</button>
+      <button class="tab-btn" id="tabMyAppointments" type="button">🔄 Ver, cambiar o cancelar mi turno</button>
+    </div>
+
+    <!-- ==========================================
+         SECCIÓN 1: WIZARD DE RESERVA (4 PASOS)
+         ========================================== -->
+    <section id="bookingSection">
+      <div class="stepper" id="stepper">
+        <div class="step-item active" data-step="1"><span class="step-num">1</span> Especialidad</div>
+        <div class="step-item" data-step="2"><span class="step-num">2</span> Profesional</div>
+        <div class="step-item" data-step="3"><span class="step-num">3</span> Día y hora</div>
+        <div class="step-item" data-step="4"><span class="step-num">4</span> Tus datos</div>
+      </div>
+
+      <div id="bookingAlert"></div>
+
+      <!-- Paso 1: Especialidad -->
+      <div class="card" id="step1">
+        <h2 class="card-title">1. ¿Qué especialidad necesitás?</h2>
+        <p class="card-sub">Buscá o tocá la especialidad para ver los profesionales y horarios disponibles.</p>
+        <div class="field" style="margin-bottom:14px;">
+          <input id="specialtySearch" type="search" placeholder="🔍 Buscar especialidad (ej: Psicología, Ginecología, Cardiología...)" />
+        </div>
+        <div class="grid-3" id="specialtiesGrid">Cargando especialidades...</div>
+      </div>
+
+      <!-- Paso 2: Profesional -->
+      <div class="card hidden" id="step2">
+        <h2 class="card-title">2. Elegí tu profesional</h2>
+        <p class="card-sub" id="step2Sub">Podés elegir un médico en particular o el primer turno libre más pronto.</p>
+        <div class="grid-2" id="doctorsGrid"></div>
+        <div class="actions-row">
+          <button class="btn btn-secondary" type="button" id="backToStep1">⬅️ Cambiar especialidad</button>
+        </div>
+      </div>
+
+      <!-- Paso 3: Día y Horario -->
+      <div class="card hidden" id="step3">
+        <h2 class="card-title">3. Elegí el día y el horario</h2>
+        <p class="card-sub" id="step3Sub">Agenda sincronizada en tiempo real con Google Calendar.</p>
+
+        <div class="days-strip" id="daysStrip">Cargando fechas...</div>
+        <div id="slotsContainer"></div>
+
+        <div class="actions-row">
+          <button class="btn btn-secondary" type="button" id="backToStep2">⬅️ Cambiar profesional</button>
+        </div>
+      </div>
+
+      <!-- Paso 4: Datos del paciente y confirmación -->
+      <div class="card hidden" id="step4">
+        <h2 class="card-title">4. Completá tus datos para confirmar</h2>
+        <p class="card-sub">Si ya viniste antes, al poner tu DNI completamos tus datos automáticamente.</p>
+
+        <div class="summary-box" id="bookingSummary"></div>
+
+        <form id="patientForm">
+          <div class="form-grid">
+            <div class="field">
+              <label for="inputDni">DNI del paciente *</label>
+              <input id="inputDni" type="text" inputmode="numeric" placeholder="Ej: 32456789" required />
+              <div class="hint" id="dniLookupHint">Solo números, sin puntos.</div>
+            </div>
+            <div class="field">
+              <label for="inputName">Nombre y Apellido *</label>
+              <input id="inputName" type="text" placeholder="Ej: María López" required />
+            </div>
+            <div class="field">
+              <label for="inputWhatsapp">WhatsApp (para comprobante y recordatorio 24 hs) *</label>
+              <input id="inputWhatsapp" type="tel" placeholder="Ej: 1155550001" required />
+              <div class="hint">24 hs antes te escribimos para confirmar, cambiar o cancelar.</div>
+            </div>
+            <div class="field">
+              <label for="inputObraSocial">Obra Social / Prepaga</label>
+              <select id="inputObraSocial">
+                <option value="Particular">Particular</option>
+              </select>
+              <input id="inputObraSocialOtra" type="text" class="hidden" placeholder="Escribí el nombre de tu obra social" style="margin-top:8px;" />
+            </div>
+          </div>
+
+          <div class="actions-row">
+            <button class="btn btn-secondary" type="button" id="backToStep3">⬅️ Cambiar día u hora</button>
+            <button class="btn btn-primary" type="submit" id="confirmBookingBtn">✅ Confirmar mi turno</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Pantalla de éxito -->
+      <div class="card hidden" id="stepSuccess">
+        <h2 class="card-title">🎉 ¡Tu turno quedó reservado!</h2>
+        <p class="card-sub">Ya agendamos tu horario en Google Calendar y te enviamos el comprobante por WhatsApp.</p>
+        <div class="summary-box" id="successSummary"></div>
+        <div class="actions-row">
+          <button class="btn btn-primary" type="button" id="bookAnotherBtn">📅 Sacar otro turno</button>
+          <a class="btn btn-secondary" id="openWaLink" href="/bot">📱 Ver comprobante en Bot WhatsApp</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SECCIÓN 2: MIS TURNOS (CONFIRMAR / CAMBIAR / CANCELAR)
+         ========================================== -->
+    <section id="myAppointmentsSection" class="hidden">
+      <div class="card">
+        <h2 class="card-title">Consultá o gestioná tus turnos</h2>
+        <p class="card-sub">Ingresá tu DNI para confirmar asistencia, reprogramar o cancelar un turno vigente.</p>
+        <form id="lookupAppointmentsForm" class="form-grid" style="align-items:end;">
+          <div class="field">
+            <label for="lookupDni">Tu DNI (sin puntos)</label>
+            <input id="lookupDni" type="text" inputmode="numeric" placeholder="Ej: 32456789" required />
+          </div>
+          <div>
+            <button class="btn btn-primary" type="submit">🔍 Buscar mis turnos</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="myAppointmentsAlert"></div>
+      <div id="myAppointmentsList"></div>
+
+      <!-- Modal inline de reprogramación -->
+      <div class="card hidden" id="reschedulePanel">
+        <h3 class="card-title">🔄 Reprogramar turno</h3>
+        <p class="card-sub" id="rescheduleInfo"></p>
+        <div class="days-strip" id="rescheduleDays"></div>
+        <div id="rescheduleSlots"></div>
+        <div class="actions-row">
+          <button class="btn btn-secondary" type="button" id="cancelRescheduleBtn">Cancelar modificación</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bot Web Flotante -->
+  <button class="chat-fab" id="chatFab" type="button">💬 ¿Preferís chatear con el Bot?</button>
+
+  <div class="chat-widget hidden" id="webChatWidget">
+    <div class="chat-header">
+      <div>
+        <strong>Asistente Virtual de Turnos</strong>
+        <div style="font-size:12px; opacity:.85;">Responde al instante</div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="btn btn-sm btn-secondary" id="webChatReset" type="button" title="Reiniciar">🔄</button>
+        <button class="btn btn-sm btn-secondary" id="webChatClose" type="button" title="Cerrar">✕</button>
+      </div>
+    </div>
+    <div class="chat-messages" id="webChatMessages"></div>
+    <form class="chat-input-bar" id="webChatForm">
+      <input id="webChatInput" type="text" placeholder="Escribí un mensaje o elegí una opción..." autocomplete="off" />
+      <button class="btn btn-primary btn-sm" type="submit">Enviar</button>
+    </form>
+  </div>
+
+  <footer style="text-align:center; padding:18px 16px 36px; font-size:12px; color:#64748b;">
+    <a href="/admin" style="color:#64748b; text-decoration:none;">🔒 Acceso Administradores y Profesionales</a>
+  </footer>
+
+  <script src="/js/pwa-install.js"></script>
+  <script src="/js/web-turnero.js"></script>
+</body>
+</html>

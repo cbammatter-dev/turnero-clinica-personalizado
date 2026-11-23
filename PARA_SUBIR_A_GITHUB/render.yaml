@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: turnero-clinica
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22.14.0
+      - key: CLINIC_TIMEZONE
+        value: America/Argentina/Buenos_Aires
+      - key: CLINIC_UTC_OFFSET
+        value: "-03:00"

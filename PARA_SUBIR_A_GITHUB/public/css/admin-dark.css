@@ -1,0 +1,448 @@
+/* ==========================================================================
+ * MODO OSCURO DESCANSO VISUAL — EXCLUSIVO PARA EL PORTAL DE ADMINISTRACIÓN
+ * Solo aplica estilos visuales a /admin sin modificar ninguna lógica ni
+ * afectar las pantallas públicas de pacientes.
+ * ========================================================================== */
+
+:root {
+  color-scheme: dark;
+  --bg: #111827;
+  --surface: #1b2434;
+  --surface-elevated: #222e42;
+  --surface-input: #141c2b;
+  --text: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border: #2e3c52;
+  --border-soft: #253247;
+  --primary: #0d9488;
+  --primary-dark: #0f766e;
+  --primary-soft: #1f4e4a;
+  --primary-bg: #152b30;
+  --accent: #38bdf8;
+  --success: #16a34a;
+  --success-bg: #132f25;
+  --warning: #d97706;
+  --warning-bg: #332712;
+  --danger: #dc2626;
+  --danger-bg: #36191e;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.32);
+}
+
+html,
+body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* Pantalla de inicio de sesión (suave para la vista) */
+.login-shell {
+  background: radial-gradient(circle at top, #1b2a3c 0%, #111827 72%) !important;
+}
+
+.login-card {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 22px 50px rgba(0, 0, 0, 0.45) !important;
+  color: var(--text);
+}
+
+.login-card p {
+  color: var(--text-muted) !important;
+}
+
+.login-card a {
+  color: #5eead4 !important;
+}
+
+/* Barra superior */
+.topbar {
+  background: #161f2e;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.role-pill {
+  background: #153636 !important;
+  color: #5eead4 !important;
+  border: 1px solid #1f5c57;
+}
+
+/* Tarjetas, estadísticas y contenedores */
+.card,
+.stat-card,
+.record-card,
+.recetario-card,
+.mobile-appt-card,
+.appt-item {
+  background: var(--surface) !important;
+  border-color: var(--border) !important;
+  color: var(--text);
+}
+
+.stat-card {
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.22);
+}
+
+.stat-card strong {
+  color: #f1f5f9;
+}
+
+#statConfirmados,
+#repStatMonto {
+  color: #4ade80 !important;
+}
+
+#statPendientes,
+#repStatConCopago {
+  color: #fbbf24 !important;
+}
+
+/* Tarjetas con tintes suaves oscuros */
+#doctorWelcomeBanner {
+  background: #142a2e !important;
+  border-color: #1f5c57 !important;
+}
+
+#doctorBannerSub {
+  color: #cbd5e1 !important;
+}
+
+section.card.admin-only[style*="#f0f9ff"] {
+  background: #152538 !important;
+  border-color: #25476b !important;
+}
+
+.summary-box {
+  background: #162834 !important;
+  border-color: #244658 !important;
+  color: var(--text);
+}
+
+/* Caja de copago dentro de Historia Clínica */
+#clinicalRecordForm .summary-box {
+  background: #2b2416 !important;
+  border-color: #6b4f1b !important;
+}
+
+.recetario-card.recommended {
+  background: #142b24 !important;
+  border-color: #22664a !important;
+}
+
+/* Textos secundarios y enlaces */
+h1, h2, h3, h4, strong {
+  color: #f1f5f9;
+}
+
+p,
+.card-sub,
+.field .hint,
+.record-meta,
+summary {
+  color: var(--text-muted);
+}
+
+#portalView p[style*="#475569"],
+#portalView p[style*="#334155"],
+#portalView div[style*="#475569"],
+#portalView div[style*="#334155"],
+#portalView div[style*="#64748b"],
+#portalView span[style*="#475569"],
+#portalView span[style*="#334155"],
+#portalView span[style*="#64748b"],
+#portalView small[style*="#64748b"],
+.modal-panel p[style*="#475569"],
+.modal-panel div[style*="#475569"],
+.modal-panel div[style*="#334155"],
+.modal-panel div[style*="#64748b"],
+.modal-panel span[style*="#475569"],
+.modal-panel span[style*="#64748b"],
+.modal-panel label[style*="#334155"] {
+  color: #a8b7cc !important;
+}
+
+#portalView a[style*="#0f766e"],
+#portalView div[style*="#0f766e"],
+#portalView p[style*="#0f766e"],
+.modal-panel div[style*="#0f766e"],
+.modal-panel a[style*="#0f766e"] {
+  color: #5eead4 !important;
+}
+
+#portalView small[style*="#0284c7"],
+#portalView div[style*="#0284c7"],
+.modal-panel span[style*="#0369a1"] {
+  color: #7dd3fc !important;
+}
+
+#portalView strong[style*="#15803d"],
+#portalView span[style*="#15803d"] {
+  color: #4ade80 !important;
+}
+
+#portalView span[style*="#b91c1c"] {
+  color: #fca5a5 !important;
+}
+
+code {
+  background: #0f172a;
+  color: #7dd3fc;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+hr {
+  border-top-color: var(--border) !important;
+}
+
+/* Tablas */
+table {
+  color: var(--text);
+}
+
+th {
+  background: #141c2b;
+  color: #cbd5e1;
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--text);
+}
+
+tbody tr:hover {
+  background: rgba(56, 189, 248, 0.05);
+}
+
+/* Campos de formulario, filtros y selectores */
+input,
+select,
+textarea,
+.field input,
+.field select,
+.field textarea {
+  background-color: var(--surface-input) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: #14b8a6 !important;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.22);
+}
+
+option {
+  background-color: #1b2434;
+  color: var(--text);
+}
+
+input[type="checkbox"] {
+  accent-color: #14b8a6;
+}
+
+/* Botones y pestañas */
+.btn-secondary {
+  background: #273449;
+  color: #e2e8f0;
+  border: 1px solid #384963;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #32435d;
+  color: #f8fafc;
+}
+
+.btn-primary {
+  background: #0d9488;
+  color: #f8fafc;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #0f766e;
+}
+
+.btn-success {
+  background: #15803d;
+  color: #f8fafc;
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #166534;
+}
+
+.btn-warning {
+  background: #b45309;
+  color: #f8fafc;
+}
+
+.btn-danger {
+  background: #b91c1c;
+  color: #f8fafc;
+}
+
+.tab-btn {
+  background: #151e2c;
+  border-color: var(--border);
+  color: #cbd5e1;
+}
+
+.tab-btn:hover {
+  background: #222e42;
+  color: #f1f5f9;
+}
+
+.tab-btn.active {
+  background: #0d9488;
+  border-color: #14b8a6;
+  color: #f8fafc;
+}
+
+/* Badges y alertas con contraste suave */
+.badge-reservado {
+  background: #332712;
+  color: #fcd34d;
+  border: 1px solid #6b4f1b;
+}
+
+.badge-confirmado,
+.badge-live {
+  background: #132f25;
+  color: #6ee7b7;
+  border: 1px solid #1f513f;
+}
+
+.badge-cancelado {
+  background: #36191e;
+  color: #fca5a5;
+  border: 1px solid #6e2932;
+}
+
+.badge-asistio,
+.badge-demo {
+  background: #162844;
+  color: #93c5fd;
+  border: 1px solid #274676;
+}
+
+.alert-success {
+  background: #132f25;
+  color: #86efac;
+  border: 1px solid #1f513f;
+}
+
+.alert-error {
+  background: #36191e;
+  color: #fca5a5;
+  border: 1px solid #6e2932;
+}
+
+.alert-info {
+  background: #162844;
+  color: #93c5fd;
+  border: 1px solid #274676;
+}
+
+/* Modales */
+.modal-backdrop {
+  background: rgba(5, 10, 20, 0.74);
+  backdrop-filter: blur(3px);
+}
+
+.modal-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 26px 65px rgba(0, 0, 0, 0.55);
+}
+
+.modal-header {
+  background: #134e4a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#recetariosModal .modal-header {
+  background: #14532d !important;
+}
+
+#databaseModal .modal-header {
+  background: #0c4a6e !important;
+}
+
+.modal-body {
+  background: var(--surface);
+}
+
+/* Bloques dinámicos generados por admin.js (sin modificar JS) */
+#blocksList > div {
+  background: #32191e !important;
+  border-color: #6e2932 !important;
+  color: var(--text);
+}
+
+#blocksList > div span {
+  color: #fca5a5 !important;
+}
+
+#obrasSocialesChips > span {
+  background: #152e31 !important;
+  border-color: #215c58 !important;
+  color: #99f6e4 !important;
+}
+
+#obrasSocialesChips > span button {
+  color: #fca5a5 !important;
+}
+
+#specialHoursList > div {
+  background: #15263a !important;
+  border-color: #25476b !important;
+  color: var(--text);
+}
+
+#scheduleRequestsList > div {
+  background: #202b3d !important;
+  border-color: #384963 !important;
+}
+
+#scheduleRequestsList > div[style*="#fffbeb"] {
+  background: #2b2416 !important;
+  border-color: #6b4f1b !important;
+}
+
+#scheduleDaysContainer > div {
+  background: #151e2c !important;
+  border-color: var(--border) !important;
+}
+
+#scheduleDaysContainer > div[style*="#f0fdfa"] {
+  background: #152d30 !important;
+  border-color: #1f5c57 !important;
+}
+
+#waTestPanel,
+#waSetupCard details,
+#recetariosModal .admin-only {
+  border-top-color: var(--border) !important;
+}
+
+#recetarioIframeBox > div[style*="#fef3c7"] {
+  background: #332712 !important;
+  color: #fde68a !important;
+}
+
+/* Mantener borde blanco en el QR para que el celular lo escanee perfecto */
+#waQrImg {
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+}

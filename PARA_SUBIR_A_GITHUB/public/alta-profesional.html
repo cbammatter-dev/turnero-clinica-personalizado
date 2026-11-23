@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Informar Días y Horarios — Profesionales</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-icon">🩺</div>
+        <div class="brand-text">
+          <strong id="clinicName">Clínica Salud Integral</strong>
+          <span>Alta de Profesionales y Horarios de Atención</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="max-width:780px;">
+    <section class="hero">
+      <h1>Informá tus días y horarios de atención</h1>
+      <p>Completá este formulario para que Administración arme o actualice tu agenda de turnos.</p>
+    </section>
+
+    <div id="formAlert"></div>
+
+    <section class="card" id="requestCard">
+      <form id="scheduleRequestForm">
+        <div class="field" style="margin-bottom:16px;">
+          <label for="reqTipo">¿Sos profesional nuevo o querés cambiar tus horarios actuales?</label>
+          <select id="reqTipo">
+            <option value="nuevo">🆕 Soy profesional nuevo en la clínica</option>
+            <option value="cambio_horario">🔄 Ya atiendo en la clínica y quiero cambiar mis horarios</option>
+          </select>
+        </div>
+
+        <!-- Selector si ya atiende en la clínica -->
+        <div class="field hidden" id="existingDoctorField" style="margin-bottom:16px;">
+          <label for="reqExistingDoctor">Seleccioná tu nombre</label>
+          <select id="reqExistingDoctor"></select>
+        </div>
+
+        <!-- Datos del profesional nuevo -->
+        <div id="newDoctorFields" class="form-grid" style="margin-bottom:16px;">
+          <div class="field">
+            <label for="reqName">Nombre y Apellido (ej: Dra. María González) *</label>
+            <input id="reqName" type="text" placeholder="Dr. / Dra. / Lic. ..." />
+          </div>
+          <div class="field">
+            <label for="reqMatricula">Matrícula (MN / MP)</label>
+            <input id="reqMatricula" type="text" placeholder="Ej: MN 123.456" />
+          </div>
+          <div class="field">
+            <label for="reqSpec">Especialidad *</label>
+            <select id="reqSpec"></select>
+          </div>
+          <div class="field hidden" id="reqNewSpecField">
+            <label for="reqNewSpec">Escribí tu especialidad *</label>
+            <input id="reqNewSpec" type="text" placeholder="Ej: Oftalmología" />
+          </div>
+          <div class="field">
+            <label for="reqPhone">WhatsApp de contacto *</label>
+            <input id="reqPhone" type="tel" placeholder="Ej: 3476582815" />
+          </div>
+          <div class="field">
+            <label for="reqGmail">Tu Gmail (para compartirte tu Google Calendar)</label>
+            <input id="reqGmail" type="email" placeholder="Ej: dra.gonzalez@gmail.com" />
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label for="reqObras">Obras Sociales / Prepagas que atendés</label>
+            <input id="reqObras" type="text" value="Particular, OSDE, Swiss Medical, Galeno, IOMA" />
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:18px;">
+          <label for="reqDuration">⏱️ Duración de cada turno</label>
+          <select id="reqDuration">
+            <option value="15">15 minutos</option>
+            <option value="20">20 minutos</option>
+            <option value="30" selected>30 minutos</option>
+            <option value="40">40 minutos</option>
+            <option value="45">45 minutos</option>
+            <option value="60">60 minutos (1 hora)</option>
+          </select>
+        </div>
+
+        <h3 style="margin:0 0 6px; font-size:17px;">🗓️ Seleccioná tus días y franjas horarias disponibles</h3>
+        <p class="card-sub" style="margin-bottom:12px;">
+          Podés marcar cualquier día (Lunes a Domingo) y agregar doble turno (mañana y tarde) si lo necesitás.
+        </p>
+
+        <div id="reqDaysContainer" style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;"></div>
+
+        <div class="field" style="margin-bottom:18px;">
+          <label for="reqNotas">Comentarios o aclaraciones para Administración (opcional)</label>
+          <textarea id="reqNotas" rows="3" placeholder="Ej: A partir de la semana que viene, o solo atiendo mayores de 15 años..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-success" id="submitRequestBtn" style="width:100%; font-size:16px;">
+          📨 Enviar mis días y horarios a Administración
+        </button>
+      </form>
+    </section>
+
+    <section class="card hidden" id="successCard" style="text-align:center;">
+      <div style="font-size:46px; margin-bottom:8px;">✅</div>
+      <h2 class="card-title">¡Horarios enviados con éxito!</h2>
+      <p style="color:#475569; margin-bottom:18px;">
+        La Administración de <strong id="successClinicName">la clínica</strong> ya recibió tus días y horarios disponibles para armar tu agenda y enviarte tu acceso.
+      </p>
+      <button type="button" class="btn btn-primary" id="sendAnotherBtn">Enviar otra propuesta</button>
+    </section>
+  </main>
+
+  <script src="/js/alta-profesional.js"></script>
+</body>
+</html>

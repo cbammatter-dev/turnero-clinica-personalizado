@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <title>Asistente de Turnos por WhatsApp</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    body {
+      background: #e2e8f0;
+    }
+    .patient-bot-shell {
+      max-width: 520px;
+      margin: 18px auto;
+      padding: 0 12px;
+    }
+    .patient-bot-frame {
+      height: calc(100dvh - 80px);
+      min-height: 540px;
+      max-height: 760px;
+    }
+    .phone-bar {
+      background: #064e45;
+      color: #ccfbf1;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+    .phone-bar input {
+      background: rgba(255,255,255,0.14);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      border-radius: 8px;
+      padding: 5px 8px;
+      font-size: 12px;
+      width: 145px;
+    }
+    .phone-bar input::placeholder {
+      color: rgba(255,255,255,0.7);
+    }
+    @media (max-width: 600px) {
+      .patient-bot-shell {
+        margin: 0;
+        padding: 0;
+        max-width: 100%;
+      }
+      .patient-bot-frame {
+        border-radius: 0;
+        border: none;
+        height: 100dvh;
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="patient-bot-shell">
+    <section class="wa-phone-frame patient-bot-frame">
+      <div class="wa-header">
+        <div>
+          <strong id="waClinicTitle">Asistente de Turnos</strong>
+          <div style="font-size:12px; opacity:.85;" id="waClinicSub">Atención automática 24 hs</div>
+        </div>
+        <button class="btn btn-sm" id="sayHiBtn" type="button" style="background:rgba(255,255,255,0.18); color:#fff;">
+          🏠 Menú
+        </button>
+      </div>
+
+      <div class="phone-bar">
+        <span>📱 Tu WhatsApp:</span>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <input id="simPhone" type="tel" placeholder="Ej: 1155550001" />
+          <button type="button" class="btn btn-sm" id="loadPhoneBtn" style="background:#00a884; color:#fff; padding:5px 10px;">
+            Usar
+          </button>
+        </div>
+      </div>
+
+      <div class="wa-messages" id="waMessages"></div>
+
+      <form class="wa-input-bar" id="waForm">
+        <input id="waInput" type="text" placeholder="Escribí un mensaje (ej: Hola)..." autocomplete="off" />
+        <button class="btn btn-primary btn-sm" type="submit" style="border-radius:20px; background:#00a884;">Enviar</button>
+      </form>
+    </section>
+
+    <footer style="text-align:center; padding:12px 0; font-size:12px; color:#64748b;">
+      <a href="/admin" style="color:#64748b; text-decoration:none;">🔒 Acceso Administradores y Profesionales</a>
+    </footer>
+  </main>
+
+  <script src="/js/pwa-install.js"></script>
+  <script src="/js/whatsapp-demo.js"></script>
+</body>
+</html>

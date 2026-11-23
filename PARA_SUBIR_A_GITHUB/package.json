@@ -1,0 +1,24 @@
+{
+  "name": "turnero-clinica",
+  "version": "1.0.0",
+  "description": "Sistema de turnos para clínica multi-profesional con Bot de WhatsApp, Turnero Web, Google Calendar y recordatorios automáticos 24 hs antes.",
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc14",
+    "dotenv": "^16.4.7",
+    "exceljs": "^4.4.0",
+    "express": "^4.21.2",
+    "googleapis": "^144.0.0",
+    "node-cron": "^3.0.3",
+    "pino": "^10.4.0",
+    "qrcode": "^1.5.4"
+  }
+}

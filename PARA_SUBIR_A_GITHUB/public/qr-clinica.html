@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cartel QR para Recepción — Turnero</title>
+  <link rel="stylesheet" href="/css/styles.css" />
+  <style>
+    body {
+      background: #f1f5f9;
+    }
+    .poster-actions {
+      max-width: 860px;
+      margin: 18px auto 0;
+      padding: 0 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .local-warning {
+      max-width: 860px;
+      margin: 14px auto 0;
+      padding: 14px 18px;
+      background: #fffbeb;
+      border: 2px solid #f59e0b;
+      border-radius: 14px;
+      color: #78350f;
+      font-size: 14px;
+    }
+    .local-warning-form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .local-warning-form input {
+      flex: 1;
+      min-width: 240px;
+      padding: 9px 12px;
+      border: 1px solid #d97706;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+      color: #0f172a;
+    }
+    .poster-sheet {
+      max-width: 860px;
+      margin: 18px auto 26px;
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 32px 28px;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+      border: 2px solid #0f766e;
+      text-align: center;
+    }
+    .poster-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+    .poster-header img {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+    }
+    .poster-header h1 {
+      margin: 0;
+      font-size: 28px;
+      color: #0f766e;
+    }
+    .poster-header p {
+      margin: 0;
+      font-size: 15px;
+      color: #475569;
+    }
+    .qr-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 18px;
+      margin: 18px 0 22px;
+    }
+    .qr-box {
+      border: 2px solid #cbd5e1;
+      border-radius: 18px;
+      padding: 18px 14px;
+      background: #f8fafc;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .qr-box.primary-qr {
+      border-color: #16a34a;
+      background: #f0fdf4;
+    }
+    .qr-box h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+      color: #0f172a;
+    }
+    .qr-box p {
+      margin: 0 0 12px;
+      font-size: 13px;
+      color: #475569;
+    }
+    .qr-box img {
+      width: 210px;
+      height: 210px;
+      background: #fff;
+      padding: 10px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+    }
+    .qr-url {
+      margin-top: 10px;
+      font-size: 11px;
+      color: #0f766e;
+      word-break: break-all;
+      text-decoration: underline;
+    }
+    .qr-btn-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 10px;
+    }
+    .poster-footer {
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      border-radius: 14px;
+      padding: 14px 18px;
+      font-size: 14px;
+      color: #115e59;
+    }
+    .extra-card {
+      max-width: 860px;
+      margin: 0 auto 40px;
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 20px 24px;
+      border: 1px solid #cbd5e1;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .extra-card img {
+      width: 150px;
+      height: 150px;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 6px;
+      background: #fff;
+    }
+    @media print {
+      body {
+        background: #fff;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .poster-sheet {
+        box-shadow: none;
+        margin: 0;
+        max-width: 100%;
+        border: 2px solid #0f766e;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="poster-actions no-print">
+    <a href="/admin" class="btn btn-secondary btn-sm">← Volver al Panel</a>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button type="button" class="btn btn-primary" onclick="window.print()">🖨️ Imprimir Cartel A4 para Recepción</button>
+    </div>
+  </div>
+
+  <!-- Aviso automático si se abrió en localhost -->
+  <div id="localhostBanner" class="local-warning no-print hidden">
+    <strong>⚠️ Atención: abriste este cartel en modo local (<code>localhost</code>).</strong><br />
+    Los celulares <strong>NO pueden abrir</strong> direcciones <code>localhost</code>. Para que los QR funcionen desde cualquier celular, abrí esta página desde tu enlace público (ej. <code>https://tu-clinica.onrender.com/qr-clinica</code>) o pegá tu enlace público acá abajo:
+    <form id="customOriginForm" class="local-warning-form">
+      <input id="customOriginInput" type="url" placeholder="https://tu-turnero.onrender.com" required />
+      <button type="submit" class="btn btn-primary btn-sm">🔄 Generar QR con este enlace</button>
+    </form>
+  </div>
+
+  <div id="posterAlert" class="no-print" style="max-width:860px; margin:12px auto 0; padding:0 16px;"></div>
+
+  <main class="poster-sheet">
+    <div class="poster-header">
+      <img src="/icons/icon-192.png" alt="Logo Clínica" />
+      <h1 id="posterClinicName">Clínica Salud Integral</h1>
+      <p id="posterClinicSub">Sacá, confirmá o cambiá tu turno médico en segundos desde tu celular</p>
+    </div>
+
+    <div class="qr-cards-grid">
+      <div class="qr-box primary-qr" id="appQrCard">
+        <h2>📲 App / Bot de Turnos</h2>
+        <p>Escaneá para abrir el <strong>Bot de Turnos</strong> e instalar la App gratuita en tu celular (Android y iPhone).</p>
+        <img id="qrAppImg" src="" alt="QR App Bot de Turnos" />
+        <a id="qrAppLink" class="qr-url" href="#" target="_blank" rel="noopener"></a>
+        <div class="qr-btn-row no-print">
+          <button type="button" class="btn btn-secondary btn-sm" id="copyAppBtn">📋 Copiar link</button>
+          <a class="btn btn-primary btn-sm" id="dlAppBtn" download="QR_App_Bot_Pacientes.png" href="#">⬇️ Descargar QR</a>
+        </div>
+      </div>
+
+      <div class="qr-box" id="webQrCard">
+        <h2>🌐 Turnero Web</h2>
+        <p>Escaneá para sacar turno paso a paso por especialidad, médico, día y horario.</p>
+        <img id="qrWebImg" src="" alt="QR Turnero Web" />
+        <a id="qrWebLink" class="qr-url" href="#" target="_blank" rel="noopener"></a>
+        <div class="qr-btn-row no-print">
+          <button type="button" class="btn btn-secondary btn-sm" id="copyWebBtn">📋 Copiar link</button>
+          <a class="btn btn-primary btn-sm" id="dlWebBtn" download="QR_Turnero_Web_Pacientes.png" href="#">⬇️ Descargar QR</a>
+        </div>
+      </div>
+
+      <div class="qr-box" id="waQrCard">
+        <h2>💬 Turnos por WhatsApp</h2>
+        <p>Escaneá con la cámara de tu celular para escribirnos directo a nuestro <strong>WhatsApp</strong>.</p>
+        <img id="qrWaImg" src="" alt="QR WhatsApp" />
+        <a id="qrWaLink" class="qr-url" href="#" target="_blank" rel="noopener"></a>
+        <div class="qr-btn-row no-print">
+          <button type="button" class="btn btn-secondary btn-sm" id="copyWaBtn">📋 Copiar link</button>
+          <a class="btn btn-success btn-sm" id="dlWaBtn" download="QR_WhatsApp_Turnos.png" href="#">⬇️ Descargar QR</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="poster-footer">
+      <strong>⏰ Recordatorio automático 24 hs antes:</strong> Te avisamos por WhatsApp un día antes de tu consulta para que confirmes, modifiques o canceles con un solo mensaje.
+      <div id="posterAddress" style="margin-top:6px; font-weight:600;"></div>
+    </div>
+  </main>
+
+  <!-- QR exclusivo para médicos (no se imprime en el cartel de pacientes) -->
+  <section class="extra-card no-print">
+    <div style="flex:1; min-width:240px;">
+      <h3 style="margin:0 0 6px; color:#0f766e;">🩺 QR exclusivo para Profesionales (NO sale impreso en el cartel de recepción)</h3>
+      <p style="margin:0 0 10px; font-size:13px; color:#475569;">
+        Compartí este enlace o QR con médicos nuevos o actuales para que te envíen sus días y horarios de atención:
+      </p>
+      <a id="qrProfLink" class="qr-url" href="#" target="_blank" rel="noopener" style="display:block; margin-bottom:10px;"></a>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button type="button" class="btn btn-secondary btn-sm" id="copyProfBtn">📋 Copiar link</button>
+        <a class="btn btn-success btn-sm" id="dlProfBtn" download="QR_Formulario_Profesionales.png" href="#">⬇️ Descargar QR Profesionales</a>
+      </div>
+    </div>
+    <img id="qrProfImg" src="" alt="QR Formulario Profesionales" />
+  </section>
+
+  <script>
+    function showMsg(text, type = 'success') {
+      const box = document.getElementById('posterAlert');
+      box.innerHTML = '<div class="alert alert-' + type + '">' + text + '</div>';
+      setTimeout(() => { box.innerHTML = ''; }, 4500);
+    }
+
+    async function copyLink(url, label) {
+      try {
+        await navigator.clipboard.writeText(url);
+        showMsg('📋 ' + label + ' copiado: ' + url, 'success');
+      } catch {
+        showMsg('Copiá este enlace: ' + url, 'info');
+      }
+    }
+
+    async function loadPoster(customOrigin) {
+      const origin = (customOrigin || window.location.origin).replace(/\/+$/, '');
+      try {
+        const res = await fetch('/api/qr-poster?origin=' + encodeURIComponent(origin));
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Error generando los QR');
+
+        document.title = 'Cartel QR — ' + data.clinic.name;
+        document.getElementById('posterClinicName').textContent = data.clinic.name;
+        document.getElementById('posterAddress').textContent =
+          '📍 ' + data.clinic.address + '  •  📞 ' + data.clinic.phone;
+
+        const warn = document.getElementById('localhostBanner');
+        if (data.isLocalhost) {
+          warn.classList.remove('hidden');
+        } else {
+          warn.classList.add('hidden');
+        }
+
+        // App / Bot
+        document.getElementById('qrAppImg').src = data.appQrDataUrl;
+        document.getElementById('qrAppLink').textContent = data.appUrl;
+        document.getElementById('qrAppLink').href = data.appUrl;
+        document.getElementById('dlAppBtn').href = data.appQrDataUrl;
+        document.getElementById('copyAppBtn').onclick = () => copyLink(data.appUrl, 'Link de la App/Bot');
+
+        // Turnero Web
+        document.getElementById('qrWebImg').src = data.webQrDataUrl;
+        document.getElementById('qrWebLink').textContent = data.webUrl;
+        document.getElementById('qrWebLink').href = data.webUrl;
+        document.getElementById('dlWebBtn').href = data.webQrDataUrl;
+        document.getElementById('copyWebBtn').onclick = () => copyLink(data.webUrl, 'Link del Turnero Web');
+
+        // Profesionales
+        document.getElementById('qrProfImg').src = data.profQrDataUrl;
+        document.getElementById('qrProfLink').textContent = data.profUrl;
+        document.getElementById('qrProfLink').href = data.profUrl;
+        document.getElementById('dlProfBtn').href = data.profQrDataUrl;
+        document.getElementById('copyProfBtn').onclick = () => copyLink(data.profUrl, 'Link para Profesionales');
+
+        // WhatsApp
+        if (data.waQrDataUrl) {
+          document.getElementById('waQrCard').style.display = '';
+          document.getElementById('qrWaImg').src = data.waQrDataUrl;
+          document.getElementById('qrWaLink').textContent = data.waUrl;
+          document.getElementById('qrWaLink').href = data.waUrl;
+          document.getElementById('dlWaBtn').href = data.waQrDataUrl;
+          document.getElementById('copyWaBtn').onclick = () => copyLink(data.waUrl, 'Link de WhatsApp');
+        } else {
+          document.getElementById('waQrCard').style.display = 'none';
+        }
+      } catch (err) {
+        showMsg('❌ No se pudieron cargar los códigos QR: ' + err.message, 'error');
+      }
+    }
+
+    document.getElementById('customOriginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const val = document.getElementById('customOriginInput').value.trim();
+      if (val) {
+        loadPoster(val);
+        showMsg('✅ ¡Códigos QR actualizados con ' + val + '!', 'success');
+      }
+    });
+
+    loadPoster();
+  </script>
+</body>
+</html>
