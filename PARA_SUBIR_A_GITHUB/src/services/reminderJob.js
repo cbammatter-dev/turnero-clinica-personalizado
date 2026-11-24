@@ -5,6 +5,7 @@ import { getAppointmentById } from './appointments.js';
 import { isWhatsAppLive, send24hReminder } from './whatsapp.js';
 import { getQrWhatsAppStatus, onQrWhatsAppConnected } from './whatsappQr.js';
 import { appointmentStartMs } from '../utils/datetime.js';
+import { scheduleCloudSync } from './cloudSync.js';
 
 let isProcessing = false;
 
@@ -110,6 +111,8 @@ export async function sendReminderNow(appointmentId, { requireLive = false } = {
          updated_at = CURRENT_TIMESTAMP
      WHERE id = ?`
   ).run(appointment.id);
+
+  scheduleCloudSync('reminder-24h');
 
   return {
     appointment: getAppointmentById(appointment.id),
