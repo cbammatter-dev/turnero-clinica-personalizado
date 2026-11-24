@@ -74,6 +74,10 @@ import {
   queryPatientsDatabase,
   queryProfessionalsDatabase,
 } from '../services/reports.js';
+import {
+  exportClinicBackupJson,
+  importClinicBackupFromBuffer,
+} from '../services/backup.js';
 
 export const apiRouter = express.Router();
 
@@ -581,6 +585,47 @@ apiRouter.patch('/admin/doctors/:id', requireAuth, requireAdmin, (req, res) => {
     );
 
     res.json({ doctor: getDoctorById(current.id) });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// Eliminar o dar de baja un profesional (si nunca tuvo turnos ni atenciones se borra completo;
+// si ya tuvo atenciones, se da de baja conservando intacto el historial clínico y reportes Excel).
+apiRouter.delete('/admin/doctors/:id', requireAuth, requireAdmin, (req, res) => {
+  try {
+    const doctorId = Number(req.params.id);
+    const current = db.prepare('SELECT * FROM profesionales WHERE id = ?').get(doctorId);
+    if (!current) return res.status(404).json({ error: 'Profesional no encontrado.' });
+
+    const turnosCount = db
+      .prepare('SELECT COUNT(*) AS c FROM turnos WHERE profesional_id = ?')
+      .get(doctorId).c;
+    const atencionesCount = db
+      .prepare('SELECT COUNT(*) AS c FROM atenciones_clinicas WHERE profesional_id = ?')
+      .get(doctorId).c;
+
+    db.prepare("DELETE FROM usuarios WHERE profesional_id = ? AND rol = 'profesional'").run(doctorId);
+    db.prepare('DELETE FROM horarios_atencion WHERE profesional_id = ?').run(doctorId);
+    db.prepare('DELETE FROM horarios_especiales WHERE profesional_id = ?').run(doctorId);
+
+    if (turnosCount === 0 && atencionesCount === 0) {
+      db.prepare('UPDATE solicitudes_horarios SET profesional_id = NULL WHERE profesional_id = ?').run(doctorId);
+      db.prepare('DELETE FROM bloqueos_agenda WHERE profesional_id = ?').run(doctorId);
+      db.prepare('DELETE FROM profesionales WHERE id = ?').run(doctorId);
+      return res.json({
+        ok: true,
+        mode: 'deleted',
+        message: `Profesional ${current.nombre} eliminado por completo.`,
+      });
+    }
+
+    db.prepare('UPDATE profesionales SET activo = 0 WHERE id = ?').run(doctorId);
+    return res.json({
+      ok: true,
+      mode: 'deactivated',
+      message: `${current.nombre} fue dado de baja (ya no aparece para sacar turnos, pero se conservan sus ${turnosCount} turnos y ${atencionesCount} atenciones en el historial y Excel).`,
+    });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
@@ -1863,6 +1908,39 @@ apiRouter.get('/panel/export/excel', requireAuth, async (req, res) => {
     res.send(Buffer.from(buffer));
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
+// RESPALDO E IMPORTACIÓN DE DATOS (.json y .xlsx) — SOLO ADMIN
+// ============================================================
+apiRouter.get('/admin/backup/export', requireAuth, requireAdmin, (_req, res) => {
+  try {
+    const backup = exportClinicBackupJson();
+    const today = getClinicNow().date;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="Respaldo_Clinica_${today}.json"`
+    );
+    res.send(JSON.stringify(backup, null, 2));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+apiRouter.post('/admin/backup/import', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { filename = '', base64 = '' } = req.body || {};
+    if (!base64 || typeof base64 !== 'string') {
+      return res.status(400).json({ error: 'Seleccioná un archivo .json o .xlsx para importar.' });
+    }
+    const cleanB64 = base64.includes(',') ? base64.split(',').pop() : base64;
+    const buffer = Buffer.from(cleanB64, 'base64');
+    const result = await importClinicBackupFromBuffer(buffer, filename);
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
