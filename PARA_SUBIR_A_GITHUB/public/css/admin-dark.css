@@ -446,3 +446,373 @@ input[type="checkbox"] {
   background: #ffffff !important;
   border-color: #ffffff !important;
 }
+
+/* ==========================================================================
+ * ESTILOS OSCUROS SUAVES PARA TURNERO WEB (/), BOT (/bot) Y ALTA PROFESIONAL
+ * ========================================================================== */
+.nav-link {
+  color: #cbd5e1;
+}
+
+.nav-link:hover {
+  background: #222e42;
+  color: #f8fafc;
+}
+
+.nav-link.active {
+  background: #153636;
+  color: #5eead4;
+}
+
+.step-item {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-muted);
+}
+
+.step-num {
+  background: #2a374d;
+  color: #cbd5e1;
+}
+
+.step-item.active {
+  background: #153034;
+  border-color: #14b8a6;
+  color: #5eead4;
+}
+
+.step-item.done {
+  border-color: #22c55e;
+  color: #86efac;
+}
+
+.option-card,
+.day-pill,
+.slot-btn {
+  background: var(--surface-input);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.option-card:hover,
+.option-card.selected {
+  background: #153034;
+  border-color: #14b8a6;
+}
+
+.option-card.featured {
+  background: #15263a;
+  border-color: #38bdf8;
+}
+
+.option-title {
+  color: #f1f5f9;
+}
+
+.option-desc,
+.slot-btn small {
+  color: #94a3b8;
+}
+
+.day-pill:hover,
+.day-pill.selected,
+.slot-btn:hover,
+.slot-btn.selected {
+  background: #0d9488;
+  border-color: #14b8a6;
+  color: #ffffff;
+}
+
+/* Widget flotante de chat en Turnero Web */
+.chat-widget {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.chat-messages {
+  background: #0f172a;
+}
+
+.msg-bot {
+  background: #1e293b;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.msg-action-btn {
+  background: #152e31;
+  border-color: #14b8a6;
+  color: #99f6e4;
+}
+
+.msg-action-btn:hover {
+  background: #0d9488;
+  color: #ffffff;
+}
+
+.chat-input-bar {
+  background: #161f2e;
+  border-top-color: var(--border);
+}
+
+/* Bot de WhatsApp (/bot) — modo oscuro suave */
+.wa-phone-frame {
+  background: #0b141a !important;
+  border-color: var(--border) !important;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.45) !important;
+}
+
+.wa-messages {
+  background: #0b141a;
+}
+
+.wa-bubble-in {
+  background: #202c33 !important;
+  color: #e9edef !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.wa-bubble-out {
+  background: #005c4b !important;
+  color: #e9edef !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.wa-time {
+  color: #94a3b8 !important;
+}
+
+.wa-btn-list {
+  border-top-color: #2f3f4a !important;
+}
+
+.wa-reply-btn {
+  background: #14322d !important;
+  border-color: #1f6b5c !important;
+  color: #99f6e4 !important;
+}
+
+.wa-reply-btn:hover {
+  background: #00a884 !important;
+  border-color: #00a884 !important;
+  color: #ffffff !important;
+}
+
+.wa-input-bar {
+  background: #162127 !important;
+  border-top: 1px solid #26353e;
+}
+
+.wa-input-bar input {
+  background: #202c33 !important;
+  color: #e9edef !important;
+  border: 1px solid #2f3f4a !important;
+}
+
+/* Formulario de Alta de Profesionales (/alta-profesional) */
+#reqDaysContainer > div {
+  background: #151e2c !important;
+  border-color: var(--border) !important;
+}
+
+#reqDaysContainer > div[style*="#f0fdfa"] {
+  background: #152d30 !important;
+  border-color: #1f5c57 !important;
+}
+
+/* ==========================================================================
+ * BARRA DE MENÚ HORIZONTAL ESTILO SICAP (MENÚS DESPLEGABLES HACIA ABAJO)
+ * ========================================================================== */
+.sicap-topbar {
+  background: #131b29;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.32);
+}
+
+.sicap-header-row {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 18px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid #222f44;
+}
+
+.sicap-menubar {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.sicap-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.sicap-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-wrap: wrap;
+}
+
+.sicap-menu {
+  position: relative;
+}
+
+.sicap-menu-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #1b2638;
+  color: #e2e8f0;
+  border: 1px solid #2e3e57;
+  border-radius: 9px;
+  padding: 8px 13px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+  white-space: nowrap;
+}
+
+.sicap-menu-trigger:hover,
+.sicap-menu.open .sicap-menu-trigger {
+  background: #22324a;
+  border-color: #14b8a6;
+  color: #ffffff;
+}
+
+.sicap-menu.active-group .sicap-menu-trigger {
+  background: #143638;
+  border-color: #14b8a6;
+  color: #5eead4;
+}
+
+.sicap-menu-trigger .caret {
+  font-size: 10px;
+  opacity: 0.78;
+}
+
+.sicap-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 295px;
+  max-width: min(360px, 92vw);
+  background: #1a2436;
+  border: 1px solid #354763;
+  border-radius: 12px;
+  padding: 6px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55);
+  z-index: 80;
+}
+
+.sicap-menu.open .sicap-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sicap-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: #e2e8f0;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 11px;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+
+.sicap-dropdown-item:hover {
+  background: #24344c;
+  color: #ffffff;
+}
+
+.sicap-dropdown-item.active {
+  background: #134e4a;
+  color: #ccfbf1;
+  font-weight: 700;
+}
+
+.sicap-dropdown-sep {
+  height: 1px;
+  background: #2b3a52;
+  margin: 4px 6px;
+}
+
+.sicap-badge-mini {
+  background: #d97706;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.sicap-view-hidden {
+  display: none !important;
+}
+
+.sicap-breadcrumb {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 9px 14px;
+  background: #162030;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.sicap-breadcrumb strong {
+  color: #5eead4;
+}
+
+@media (max-width: 760px) {
+  .sicap-menubar {
+    padding: 6px 10px;
+  }
+  .sicap-menu-trigger {
+    padding: 7px 10px;
+    font-size: 12.5px;
+  }
+  .sicap-dropdown {
+    min-width: 260px;
+  }
+  .sicap-nav-right {
+    margin-left: 0;
+  }
+}
+
+
