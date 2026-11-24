@@ -78,6 +78,10 @@ import {
   exportClinicBackupJson,
   importClinicBackupFromBuffer,
 } from '../services/backup.js';
+import {
+  getCloudSyncStatus,
+  syncDatabaseToCloudNow,
+} from '../services/cloudSync.js';
 
 export const apiRouter = express.Router();
 
@@ -126,13 +130,16 @@ apiRouter.post('/auth/change-password', requireAuth, (req, res) => {
 // ============================================================
 apiRouter.get('/status', (_req, res) => {
   const now = getClinicNow();
+  const cloudDb = getCloudSyncStatus();
   res.json({
     clinic: config.clinic,
     now,
     integrations: {
       googleCalendar: isGoogleCalendarLive() ? 'live' : 'demo',
       whatsapp: isWhatsAppLive() ? 'live' : 'demo',
+      cloudDb: cloudDb.configured ? cloudDb.status : 'local',
     },
+    cloudDb,
   });
 });
 
@@ -1938,9 +1945,19 @@ apiRouter.post('/admin/backup/import', requireAuth, requireAdmin, async (req, re
     const cleanB64 = base64.includes(',') ? base64.split(',').pop() : base64;
     const buffer = Buffer.from(cleanB64, 'base64');
     const result = await importClinicBackupFromBuffer(buffer, filename);
-    res.json({ ok: true, ...result });
+    const cloudSync = await syncDatabaseToCloudNow('backup-import', { force: true });
+    res.json({ ok: true, ...result, cloudSync });
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+apiRouter.post('/admin/cloud-sync', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const result = await syncDatabaseToCloudNow('manual-admin', { force: true });
+    res.json({ ok: true, result, cloudDb: getCloudSyncStatus() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
