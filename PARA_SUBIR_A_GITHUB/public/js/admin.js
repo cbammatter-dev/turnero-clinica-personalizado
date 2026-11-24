@@ -238,6 +238,23 @@ async function loadStatusAndStats() {
     : '📅 Google Calendar: Local';
   $('gcalBadge').className = `badge badge-${gcalLive ? 'live' : 'demo'}`;
 
+  const cloudEl = $('cloudDbBadge');
+  if (cloudEl && status?.cloudDb) {
+    if (status.cloudDb.configured) {
+      cloudEl.classList.remove('hidden');
+      const ok = status.cloudDb.status !== 'error';
+      cloudEl.textContent = ok
+        ? '☁️ Base Nube: PERMANENTE'
+        : '☁️ Base Nube: Error de sync';
+      cloudEl.className = `badge badge-${ok ? 'live' : 'demo'} admin-only`;
+      cloudEl.title = status.cloudDb.lastSyncedAt
+        ? `Última copia en Neon: ${new Date(status.cloudDb.lastSyncedAt).toLocaleString('es-AR')}`
+        : 'Respaldo automático en la nube activo (Neon)';
+    } else {
+      cloudEl.classList.add('hidden');
+    }
+  }
+
   $('statHoy').textContent = stats.totalHoy;
   $('statConfirmados').textContent = stats.confirmados;
   $('statPendientes').textContent = stats.pendientes;
