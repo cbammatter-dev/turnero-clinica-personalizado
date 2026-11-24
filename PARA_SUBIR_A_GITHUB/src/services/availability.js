@@ -1,6 +1,7 @@
 import { db } from '../db/database.js';
 import { config } from '../config.js';
 import { getBusyIntervalsFromGoogle } from './googleCalendar.js';
+import { getBlockedDayReason } from './holidays.js';
 import {
   addDaysToDate,
   formatDateFriendly,
@@ -76,6 +77,9 @@ export async function getAvailableSlotsForDoctor(doctorId, dateStr, { excludeApp
 
   const now = getClinicNow();
   if (dateStr < now.date) return [];
+
+  // Bloqueo automático de Domingos y Feriados oficiales de Argentina
+  if (getBlockedDayReason(dateStr)) return [];
 
   // Si existe un horario especial cargado para esta fecha puntual, tiene prioridad sobre el horario semanal
   const specialBlocks = db

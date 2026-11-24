@@ -40,7 +40,7 @@ export function queryPatientsDatabase({ q = '', obraSocial = '' } = {}) {
  * Base de datos completa de Profesionales (datos personales + atenciones realizadas + copagos).
  */
 export function queryProfessionalsDatabase({ q = '' } = {}) {
-  const conditions = [];
+  const conditions = ['pr.activo = 1'];
   const params = [];
 
   if (q && String(q).trim()) {

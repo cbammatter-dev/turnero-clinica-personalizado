@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { db } from '../db/database.js';
 import { getAvailableSlotsForDoctor, getDoctorById } from './availability.js';
+import { getBlockedDayReason } from './holidays.js';
 import {
   createAppointmentEvent,
   deleteAppointmentEvent,
@@ -157,6 +158,12 @@ export async function createAppointment({
     throw new Error('El profesional seleccionado no existe o no está activo.');
   }
 
+  // Bloquear Domingos y Feriados oficiales de Argentina con aviso claro
+  const blockedReason = getBlockedDayReason(fecha);
+  if (blockedReason) {
+    throw new Error(`No se pueden otorgar turnos esa fecha (${blockedReason}).`);
+  }
+
   // Verificar disponibilidad en tiempo real
   const slots = await getAvailableSlotsForDoctor(doctor.id, fecha);
   const matchingSlot = slots.find((s) => s.hora_inicio === horaInicio);
@@ -239,6 +246,11 @@ export async function rescheduleAppointment(appointmentId, { fecha, horaInicio }
   if (!appt) throw new Error('Turno no encontrado.');
   if (appt.estado === 'cancelado') {
     throw new Error('No se puede modificar un turno cancelado. Sacá uno nuevo.');
+  }
+
+  const blockedReason = getBlockedDayReason(fecha);
+  if (blockedReason) {
+    throw new Error(`No se puede reprogramar para esa fecha (${blockedReason}).`);
   }
 
   const slots = await getAvailableSlotsForDoctor(appt.profesional_id, fecha, {
