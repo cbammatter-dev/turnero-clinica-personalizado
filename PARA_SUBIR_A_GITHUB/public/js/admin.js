@@ -107,6 +107,8 @@ function showPortalView(user) {
       calBtn.classList.add('hidden');
     }
   }
+
+  setActiveSicapView(isAdmin ? 'otorgar' : 'overview');
 }
 
 async function checkSessionAndBoot() {
@@ -159,10 +161,17 @@ $('logoutBtn').addEventListener('click', async () => {
 });
 
 $('togglePasswordBoxBtn').addEventListener('click', () => {
-  $('changePasswordCard').classList.toggle('hidden');
+  closeAllSicapDropdowns();
+  if (activeSicapView === 'clave') {
+    setActiveSicapView(getDefaultSicapView());
+  } else {
+    $('changePasswordCard').classList.remove('hidden');
+    setActiveSicapView('clave');
+  }
 });
 $('cancelPassBoxBtn').addEventListener('click', () => {
   $('changePasswordCard').classList.add('hidden');
+  setActiveSicapView(getDefaultSicapView());
 });
 
 $('changePasswordForm').addEventListener('submit', async (e) => {
@@ -177,6 +186,7 @@ $('changePasswordForm').addEventListener('submit', async (e) => {
     });
     $('changePasswordForm').reset();
     $('changePasswordCard').classList.add('hidden');
+    setActiveSicapView(getDefaultSicapView());
     showAdminAlert('✅ Tu contraseña se actualizó correctamente.');
   } catch (err) {
     showAdminAlert(err.message, 'error');
@@ -246,6 +256,10 @@ async function loadSpecialtiesAndDoctors(selectSpecialtyId = null) {
     api('/api/doctors'),
   ]);
   cachedSpecialties = specialties;
+  cachedDoctors = doctors;
+  if (typeof renderOtorgarCards === 'function') {
+    renderOtorgarCards();
+  }
 
   const prevSpecVal = selectSpecialtyId ? String(selectSpecialtyId) : $('docSpec').value;
   $('docSpec').innerHTML =
@@ -307,6 +321,7 @@ async function loadSpecialtiesAndDoctors(selectSpecialtyId = null) {
                 ? `<a class="btn btn-success btn-sm" href="${openCalUrl}" target="_blank" rel="noopener">📅 Abrir</a>`
                 : `<button type="button" class="btn btn-success btn-sm" data-create-cal-doc="${d.id}">✨ Crear</button>`
             }
+            <button type="button" class="btn btn-danger btn-sm" data-del-doc="${d.id}" data-del-doc-name="${escapeHtml(d.nombre)}" title="Eliminar o dar de baja este profesional">🗑️ Eliminar</button>
           </div>
         </td>
       </tr>`;
@@ -315,6 +330,27 @@ async function loadSpecialtiesAndDoctors(selectSpecialtyId = null) {
 
   $('doctorsTbody').querySelectorAll('[data-sched-doc]').forEach((btn) => {
     btn.addEventListener('click', () => openScheduleModal(Number(btn.dataset.schedDoc)));
+  });
+
+  $('doctorsTbody').querySelectorAll('[data-del-doc]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.delDoc;
+      const name = btn.dataset.delDocName || 'este profesional';
+      if (
+        !confirm(
+          `¿Seguro que querés eliminar / dar de baja a ${name}?\n\nDejará de aparecer en el Turnero Web, en el Bot y en la lista de agendas (si ya tuvo atenciones previas, sus historias clínicas y reportes Excel se conservan intactos).`
+        )
+      ) {
+        return;
+      }
+      try {
+        const res = await api(`/api/admin/doctors/${id}`, { method: 'DELETE' });
+        showAdminAlert(`🗑️ ${res.message || 'Profesional eliminado.'}`);
+        await Promise.all([loadSpecialtiesAndDoctors(), loadUsers(), loadStatusAndStats()]);
+      } catch (err) {
+        showAdminAlert(err.message, 'error');
+      }
+    });
   });
 
   $('doctorsTbody').querySelectorAll('[data-save-doc]').forEach((btn) => {
@@ -346,8 +382,10 @@ async function loadSpecialtiesAndDoctors(selectSpecialtyId = null) {
           body: JSON.stringify({ calendarId }),
         });
         box.innerHTML = `<div class="alert alert-success">✅ ${escapeHtml(res.message)}</div>`;
+        showAdminAlert(`✅ ${res.message}`);
       } catch (err) {
         box.innerHTML = `<div class="alert alert-error">❌ ${escapeHtml(err.message)}</div>`;
+        showAdminAlert(`❌ ${err.message}`, 'error');
       }
     });
   });
@@ -1021,6 +1059,15 @@ $('autoCreateAllCalsBtn').addEventListener('click', async () => {
 async function loadObrasSociales() {
   if (currentUser?.rol !== 'admin') return;
   const { obrasSociales } = await api('/api/obras-sociales');
+  if ($('otObraSocial')) {
+    const prev = $('otObraSocial').value;
+    $('otObraSocial').innerHTML = obrasSociales
+      .map((o) => `<option value="${escapeHtml(o.nombre)}">${escapeHtml(o.nombre)}</option>`)
+      .join('');
+    if (prev && [...$('otObraSocial').options].some((o) => o.value === prev)) {
+      $('otObraSocial').value = prev;
+    }
+  }
   const box = $('obrasSocialesChips');
   if (!box) return;
 
@@ -1921,6 +1968,14 @@ async function loadScheduleRequests() {
         pendingCount === 1 ? '1 pendiente' : `${pendingCount} pendientes`;
       $('pendingReqBadge').className = `badge ${pendingCount > 0 ? 'badge-reservado' : 'badge-demo'}`;
     }
+    if ($('menuPendingReqDot')) {
+      $('menuPendingReqDot').textContent = String(pendingCount);
+      $('menuPendingReqDot').classList.toggle('hidden', pendingCount === 0);
+    }
+    if ($('menuPendingReqCount')) {
+      $('menuPendingReqCount').textContent = String(pendingCount);
+      $('menuPendingReqCount').classList.toggle('hidden', pendingCount === 0);
+    }
 
     if (requests.length === 0) {
       box.innerHTML =
@@ -2507,6 +2562,524 @@ $('exportAttentionsExcelBtn')?.addEventListener('click', () => {
   window.location.href = `/api/panel/export/excel?${params.toString()}`;
 });
 
+/* ============================================================
+ * NAVEGACIÓN HORIZONTAL DESPLEGABLE ESTILO SICAP
+ * ============================================================ */
+const SICAP_VIEW_TITLES = {
+  otorgar: 'Otorgar Turnos',
+  overview: 'Gestión General de Agendas',
+  links: 'Links para compartir y Cartel QR',
+  turnos: 'Todos los Turnos',
+  bloqueos: 'Bloquear horarios o días (Ausencias / Vacaciones)',
+  profesionales: 'Profesionales, Horarios de Atención y Google Calendar',
+  solicitudes: 'Solicitudes de Horarios de Profesionales',
+  usuarios: 'Usuarios y Administradores de Agendas',
+  clinica: 'Nombre y datos de tu clínica',
+  obras: 'Obras Sociales y Prepagas',
+  google: 'Conexión con Google Calendar',
+  whatsapp: 'Conectar WhatsApp Real (Recordatorios 24 hs automáticos)',
+  clave: 'Mi Clave (Cambiar contraseña)',
+};
+
+let activeSicapView = 'otorgar';
+
+function getDefaultSicapView() {
+  return currentUser?.rol === 'admin' ? 'otorgar' : 'overview';
+}
+
+function closeAllSicapDropdowns() {
+  document.querySelectorAll('.sicap-menu.open').forEach((m) => m.classList.remove('open'));
+}
+
+function setActiveSicapView(viewName) {
+  activeSicapView = viewName || getDefaultSicapView();
+  closeAllSicapDropdowns();
+
+  // Mostrar únicamente los paneles que corresponden a la sección elegida
+  document.querySelectorAll('[data-view-panel]').forEach((el) => {
+    const allowed = String(el.dataset.viewPanel || '').split(/\s+/);
+    const shouldShow = allowed.includes(activeSicapView);
+    el.classList.toggle('sicap-view-hidden', !shouldShow);
+  });
+
+  // Si es 'clave', asegurar que changePasswordCard no tenga .hidden
+  if ($('changePasswordCard')) {
+    $('changePasswordCard').classList.toggle('hidden', activeSicapView !== 'clave');
+  }
+
+  // Marcar ítem y grupo activo en el menú superior
+  document.querySelectorAll('.sicap-menu').forEach((m) => m.classList.remove('active-group'));
+  document.querySelectorAll('[data-go-view]').forEach((btn) => {
+    const isAct = btn.dataset.goView === activeSicapView;
+    btn.classList.toggle('active', isAct);
+    if (isAct) {
+      btn.closest('.sicap-menu')?.classList.add('active-group');
+    }
+  });
+
+  const homeView = getDefaultSicapView();
+  if ($('sicapCurrentTitle')) {
+    $('sicapCurrentTitle').textContent =
+      SICAP_VIEW_TITLES[activeSicapView] || 'Otorgar Turnos';
+  }
+  if ($('sicapBackHomeBtn')) {
+    $('sicapBackHomeBtn').textContent =
+      homeView === 'otorgar' ? '← Volver a Otorgar Turnos' : '← Volver a Mi Agenda';
+    $('sicapBackHomeBtn').classList.toggle('hidden', activeSicapView === homeView);
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Abrir/cerrar menús desplegables al hacer clic
+document.querySelectorAll('.sicap-menu-trigger').forEach((trigger) => {
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const menu = trigger.closest('.sicap-menu');
+    const wasOpen = menu.classList.contains('open');
+    closeAllSicapDropdowns();
+    if (!wasOpen) menu.classList.add('open');
+  });
+});
+
+// Clic en cualquier opción interna del menú
+document.querySelectorAll('[data-go-view]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    setActiveSicapView(btn.dataset.goView);
+  });
+});
+
+// Cerrar dropdown al hacer clic en botones de modal dentro de un dropdown o afuera
+document.querySelectorAll('.sicap-dropdown .sicap-dropdown-item').forEach((item) => {
+  item.addEventListener('click', () => closeAllSicapDropdowns());
+});
+document.addEventListener('click', () => closeAllSicapDropdowns());
+$('sicapBackHomeBtn')?.addEventListener('click', () => setActiveSicapView(getDefaultSicapView()));
+
+/* ============================================================
+ * PANTALLA PRINCIPAL: OTORGAR TURNOS (RECUADROS DE PROFESIONALES)
+ * ============================================================ */
+let cachedDoctors = [];
+const otState = {
+  mode: 'doctors', // 'doctors' | 'specs'
+  selectedSpecialty: null,
+  selectedDoctor: null,
+  selectedDate: null,
+  selectedSlot: null,
+};
+
+function otNormalize(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function setOtAlert(msg = '', type = 'error') {
+  const box = $('otAlert');
+  if (!box) return;
+  box.innerHTML = msg ? `<div class="alert alert-${type}">${escapeHtml(msg)}</div>` : '';
+}
+
+function setOtStep(step) {
+  [1, 2, 3, 4].forEach((n) => {
+    $(`otStep${n}`)?.classList.toggle('hidden', n !== step);
+  });
+  document.querySelectorAll('#otStepper .step-item').forEach((item) => {
+    const s = Number(item.dataset.otStep);
+    item.classList.remove('active', 'done');
+    if (s < step) item.classList.add('done');
+    else if (s === step) item.classList.add('active');
+  });
+}
+
+function renderOtorgarCards() {
+  const grid = $('otCardsGrid');
+  if (!grid) return;
+
+  const q = otNormalize($('otSearchInput')?.value.trim() || '');
+  const DAY_SHORT = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+  // Si estamos en modo "Por Especialidad" y todavía no eligió especialidad
+  if (otState.mode === 'specs' && !otState.selectedSpecialty) {
+    $('otStep1Title').textContent = '1. Elegí una especialidad';
+    $('otStep1Sub').textContent = 'Tocá el recuadro de la especialidad para ver sus profesionales disponibles.';
+    $('otBackToSpecsBtn')?.classList.add('hidden');
+
+    const specs = cachedSpecialties.filter((s) => {
+      if (!q) return true;
+      return otNormalize(s.nombre).includes(q) || otNormalize(s.descripcion || '').includes(q);
+    });
+
+    if (!specs.length) {
+      grid.innerHTML = '<div class="alert alert-info">No se encontraron especialidades con esa búsqueda.</div>';
+      return;
+    }
+
+    grid.innerHTML = specs
+      .map((s) => {
+        const count = cachedDoctors.filter((d) => d.especialidad_id === s.id).length;
+        return `
+          <button type="button" class="option-card" data-ot-spec="${s.id}">
+            <div class="option-icon">${escapeHtml(s.icono || '🩺')}</div>
+            <div class="option-title">${escapeHtml(s.nombre)}</div>
+            <div class="option-desc">${escapeHtml(s.descripcion || '')}</div>
+            <div style="font-size:12px; color:#5eead4; font-weight:700; margin-top:4px;">
+              ${count} ${count === 1 ? 'profesional' : 'profesionales'}
+            </div>
+          </button>`;
+      })
+      .join('');
+
+    grid.querySelectorAll('[data-ot-spec]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const specId = Number(btn.dataset.otSpec);
+        otState.selectedSpecialty = cachedSpecialties.find((s) => s.id === specId) || null;
+        if ($('otSearchInput')) $('otSearchInput').value = '';
+        renderOtorgarCards();
+      });
+    });
+    return;
+  }
+
+  // Modo "Todos los Profesionales" o médicos de la especialidad elegida
+  let docs = otState.selectedSpecialty
+    ? cachedDoctors.filter((d) => d.especialidad_id === otState.selectedSpecialty.id)
+    : cachedDoctors;
+
+  if (otState.selectedSpecialty) {
+    $('otStep1Title').textContent = `1. Profesionales de ${otState.selectedSpecialty.icono || ''} ${otState.selectedSpecialty.nombre}`;
+    $('otStep1Sub').textContent = 'Tocá el recuadro del profesional para ver sus días y horarios disponibles.';
+    $('otBackToSpecsBtn')?.classList.remove('hidden');
+  } else {
+    $('otStep1Title').textContent = '1. Elegí el profesional para otorgar un turno';
+    $('otStep1Sub').textContent = 'Se muestran todos los profesionales activos. Tocá cualquier recuadro para gestionar sus turnos.';
+    $('otBackToSpecsBtn')?.classList.add('hidden');
+  }
+
+  if (q) {
+    docs = docs.filter(
+      (d) =>
+        otNormalize(d.nombre).includes(q) ||
+        otNormalize(d.especialidad_nombre).includes(q) ||
+        otNormalize(d.consultorio || '').includes(q)
+    );
+  }
+
+  if (!docs.length) {
+    grid.innerHTML =
+      '<div class="alert alert-info">No hay profesionales cargados para esa selección. Podés agregarlos desde <strong>📅 Agendas y Turnos → Profesionales</strong>.</div>';
+    return;
+  }
+
+  grid.innerHTML = docs
+    .map((d) => {
+      const daysTxt = (d.horarios || []).length
+        ? [...new Set(d.horarios.map((h) => DAY_SHORT[h.dia_semana]))].join(', ')
+        : 'Sin horarios cargados';
+      return `
+        <button type="button" class="option-card" data-ot-doc="${d.id}">
+          <div class="option-icon">${escapeHtml(d.especialidad_icono || '🩺')}</div>
+          <div class="option-title">${escapeHtml(d.nombre)}</div>
+          <div class="option-desc"><strong>${escapeHtml(d.especialidad_nombre)}</strong> • ${escapeHtml(d.consultorio || '')}</div>
+          <div style="font-size:12px; color:#5eead4; font-weight:600; margin-top:4px;">
+            🗓️ ${escapeHtml(daysTxt)} • ⏱️ ${d.duracion_turno_min} min
+          </div>
+        </button>`;
+    })
+    .join('');
+
+  grid.querySelectorAll('[data-ot-doc]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const docId = Number(btn.dataset.otDoc);
+      const doc = cachedDoctors.find((d) => d.id === docId);
+      if (doc) openOtStep2ForDoctor(doc);
+    });
+  });
+}
+
+async function openOtStep2ForDoctor(doc) {
+  otState.selectedDoctor = doc;
+  otState.selectedDate = null;
+  otState.selectedSlot = null;
+  setOtAlert('');
+  setOtStep(2);
+
+  $('otStep2Title').textContent = `2. Elegí día y horario — ${doc.nombre}`;
+  $('otStep2Sub').textContent = `${doc.especialidad_icono || ''} ${doc.especialidad_nombre} • ${doc.consultorio || ''} • Turnos de ${doc.duracion_turno_min} min`;
+  $('otDaysStrip').innerHTML = '<div style="color:#94a3b8;">Buscando días disponibles...</div>';
+  $('otSlotsContainer').innerHTML = '';
+
+  try {
+    const { days } = await api(`/api/availability/days?doctorId=${doc.id}`);
+    if (!days || !days.length) {
+      $('otDaysStrip').innerHTML =
+        '<div class="alert alert-info">Este profesional no tiene días disponibles en los próximos 30 días. Revisá sus horarios en <strong>📅 Agendas y Turnos → Profesionales → 🗓️ Horarios</strong>.</div>';
+      return;
+    }
+
+    $('otDaysStrip').innerHTML = days
+      .map(
+        (d, idx) => `
+        <button type="button" class="day-pill ${idx === 0 ? 'selected' : ''}" data-ot-day="${escapeHtml(d.fecha)}" data-ot-day-label="${escapeHtml(d.label)}">
+          <strong>${escapeHtml(d.shortLabel || d.label)}</strong>
+          <span>${d.total_horarios} ${d.total_horarios === 1 ? 'turno' : 'turnos'}</span>
+        </button>`
+      )
+      .join('');
+
+    $('otDaysStrip').querySelectorAll('[data-ot-day]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        $('otDaysStrip').querySelectorAll('.day-pill').forEach((p) => p.classList.remove('selected'));
+        btn.classList.add('selected');
+        loadOtSlots(doc.id, btn.dataset.otDay, btn.dataset.otDayLabel);
+      });
+    });
+
+    await loadOtSlots(doc.id, days[0].fecha, days[0].label);
+  } catch (err) {
+    setOtAlert(err.message, 'error');
+  }
+}
+
+async function loadOtSlots(doctorId, fecha, dayLabel) {
+  otState.selectedDate = { fecha, label: dayLabel };
+  $('otSlotsContainer').innerHTML = '<div style="color:#94a3b8;">Cargando horarios disponibles...</div>';
+
+  try {
+    const { slots } = await api(`/api/availability/slots?doctorId=${doctorId}&date=${encodeURIComponent(fecha)}`);
+    if (!slots || !slots.length) {
+      $('otSlotsContainer').innerHTML = '<div class="alert alert-info">No quedan horarios libres para esta fecha.</div>';
+      return;
+    }
+
+    const manana = slots.filter((s) => s.periodo === 'mañana' || s.hora_inicio < '13:00');
+    const tarde = slots.filter((s) => s.periodo !== 'mañana' && s.hora_inicio >= '13:00');
+
+    const renderGroup = (title, list) => {
+      if (!list.length) return '';
+      return `
+        <div class="slots-group-title">${title}</div>
+        <div class="slots-grid">
+          ${list
+            .map(
+              (s) =>
+                `<button type="button" class="slot-btn" data-ot-slot="${escapeHtml(s.hora_inicio)}">⏰ ${escapeHtml(s.hora_inicio)} hs</button>`
+            )
+            .join('')}
+        </div>`;
+    };
+
+    $('otSlotsContainer').innerHTML =
+      renderGroup('🌅 Mañana', manana) + renderGroup('🌇 Tarde', tarde);
+
+    $('otSlotsContainer').querySelectorAll('[data-ot-slot]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        otState.selectedSlot = btn.dataset.otSlot;
+        openOtStep3();
+      });
+    });
+  } catch (err) {
+    setOtAlert(err.message, 'error');
+  }
+}
+
+function openOtStep3() {
+  setOtAlert('');
+  setOtStep(3);
+  const d = otState.selectedDoctor;
+  $('otSelectionSummary').innerHTML = `
+    <p><strong>🩺 Profesional:</strong> ${escapeHtml(d.nombre)} (${escapeHtml(d.especialidad_nombre)})</p>
+    <p><strong>📅 Día y Hora:</strong> ${escapeHtml(otState.selectedDate?.label || otState.selectedDate?.fecha)} — <strong>${escapeHtml(otState.selectedSlot)} hs</strong></p>
+    <p><strong>📍 Consultorio:</strong> ${escapeHtml(d.consultorio || '')}</p>
+  `;
+  $('otDni')?.focus();
+}
+
+function resetOtorgarFlow() {
+  otState.selectedSpecialty = null;
+  otState.selectedDoctor = null;
+  otState.selectedDate = null;
+  otState.selectedSlot = null;
+  setOtAlert('');
+  $('otBookingForm')?.reset();
+  if ($('otDniHint')) $('otDniHint').textContent = 'Si ya vino antes, sus datos se completan solos.';
+  if ($('otSearchInput')) $('otSearchInput').value = '';
+  setOtStep(1);
+  renderOtorgarCards();
+}
+
+$('otModeDoctorsBtn')?.addEventListener('click', () => {
+  otState.mode = 'doctors';
+  otState.selectedSpecialty = null;
+  $('otModeDoctorsBtn').classList.add('active');
+  $('otModeSpecsBtn').classList.remove('active');
+  setOtStep(1);
+  renderOtorgarCards();
+});
+
+$('otModeSpecsBtn')?.addEventListener('click', () => {
+  otState.mode = 'specs';
+  otState.selectedSpecialty = null;
+  $('otModeSpecsBtn').classList.add('active');
+  $('otModeDoctorsBtn').classList.remove('active');
+  setOtStep(1);
+  renderOtorgarCards();
+});
+
+$('otGoAllTurnsBtn')?.addEventListener('click', () => setActiveSicapView('turnos'));
+$('otBackToSpecsBtn')?.addEventListener('click', () => {
+  otState.selectedSpecialty = null;
+  renderOtorgarCards();
+});
+$('otBackToStep1Btn')?.addEventListener('click', () => setOtStep(1));
+$('otBackToStep2Btn')?.addEventListener('click', () => setOtStep(2));
+$('otCancelFlowBtn')?.addEventListener('click', resetOtorgarFlow);
+$('otNewBookingBtn')?.addEventListener('click', resetOtorgarFlow);
+$('otSuccessGoListBtn')?.addEventListener('click', () => {
+  resetOtorgarFlow();
+  setActiveSicapView('turnos');
+});
+
+$('otSearchInput')?.addEventListener('input', renderOtorgarCards);
+
+// Autocompletar datos del paciente por DNI si ya existe en la base de datos
+let otDniTimer = null;
+$('otDni')?.addEventListener('input', () => {
+  clearTimeout(otDniTimer);
+  const digits = $('otDni').value.replace(/\D/g, '');
+  if (digits.length < 7) return;
+  otDniTimer = setTimeout(async () => {
+    try {
+      const { patient } = await api(`/api/patients/lookup?dni=${encodeURIComponent(digits)}`);
+      if (patient) {
+        if (!$('otName').value.trim()) $('otName').value = patient.nombre_completo || '';
+        if (!$('otPhone').value.trim()) $('otPhone').value = patient.telefono_whatsapp || '';
+        if (patient.obra_social && $('otObraSocial')) {
+          const optExists = [...$('otObraSocial').options].some((o) => o.value === patient.obra_social);
+          if (optExists) $('otObraSocial').value = patient.obra_social;
+        }
+        if ($('otDniHint')) {
+          $('otDniHint').textContent = `✅ Paciente registrado encontrado: ${patient.nombre_completo}`;
+        }
+      } else if ($('otDniHint')) {
+        $('otDniHint').textContent = 'Paciente nuevo: se guardará automáticamente en la Base de Datos.';
+      }
+    } catch {
+      // ignore
+    }
+  }, 350);
+});
+
+$('otBookingForm')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  setOtAlert('');
+  const btn = $('otSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Guardando turno...';
+  try {
+    const { appointment } = await api('/api/appointments', {
+      method: 'POST',
+      body: JSON.stringify({
+        profesionalId: otState.selectedDoctor.id,
+        fecha: otState.selectedDate.fecha,
+        horaInicio: otState.selectedSlot,
+        canalOrigen: 'web',
+        notas: $('otNotes').value.trim(),
+        paciente: {
+          dni: $('otDni').value.trim(),
+          nombreCompleto: $('otName').value.trim(),
+          telefonoWhatsapp: $('otPhone').value.trim(),
+          obraSocial: $('otObraSocial').value || 'Particular',
+        },
+      }),
+    });
+
+    $('otSuccessSummary').innerHTML = `
+      <p><strong>🔖 Código:</strong> ${escapeHtml(appointment.codigo)}</p>
+      <p><strong>👤 Paciente:</strong> ${escapeHtml(appointment.paciente_nombre)} (DNI ${escapeHtml(appointment.paciente_dni)}) — ${escapeHtml(appointment.obra_social)}</p>
+      <p><strong>🩺 Profesional:</strong> ${escapeHtml(appointment.profesional_nombre)} (${escapeHtml(appointment.especialidad_nombre)})</p>
+      <p><strong>📅 Fecha y Hora:</strong> ${escapeHtml(appointment.fecha)} a las <strong>${escapeHtml(appointment.hora_inicio)} hs</strong></p>
+      <p><strong>📍 Consultorio:</strong> ${escapeHtml(appointment.consultorio)}</p>
+    `;
+    setOtStep(4);
+    await Promise.all([loadAppointments(), loadStatusAndStats()]);
+  } catch (err) {
+    setOtAlert(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Otorgar y Confirmar Turno';
+  }
+});
+
+/* ============================================================
+ * MODAL IMPORTAR DATOS Y RESPALDO (.json / .xlsx)
+ * ============================================================ */
+$('openImportModalBtn')?.addEventListener('click', () => {
+  closeAllSicapDropdowns();
+  $('importDataResult').innerHTML = '';
+  if ($('importDataFileInput')) $('importDataFileInput').value = '';
+  $('importDataModal').classList.remove('hidden');
+});
+
+$('closeImportModalBtn')?.addEventListener('click', () => {
+  $('importDataModal').classList.add('hidden');
+});
+
+$('importDataSubmitBtn')?.addEventListener('click', async () => {
+  const input = $('importDataFileInput');
+  const box = $('importDataResult');
+  const file = input?.files?.[0];
+  if (!file) {
+    box.innerHTML =
+      '<div class="alert alert-error">Primero seleccioná un archivo de respaldo (.json) o Excel (.xlsx).</div>';
+    return;
+  }
+
+  const btn = $('importDataSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Importando datos...';
+  box.innerHTML = '<div class="alert alert-info">⏳ Procesando archivo e importando datos...</div>';
+
+  try {
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('No se pudo leer el archivo seleccionado.'));
+      reader.readAsDataURL(file);
+    });
+
+    const res = await api('/api/admin/backup/import', {
+      method: 'POST',
+      body: JSON.stringify({ filename: file.name, base64 }),
+    });
+
+    const imp = res.imported || {};
+    const parts = [
+      `👥 Pacientes: <strong>${imp.pacientes || 0}</strong>`,
+      `🩺 Profesionales: <strong>${imp.profesionales || 0}</strong>`,
+      `🗓️ Horarios: <strong>${imp.horarios || 0}</strong>`,
+      `📅 Turnos: <strong>${imp.turnos || 0}</strong>`,
+      `📋 Atenciones/Copagos: <strong>${imp.atenciones || 0}</strong>`,
+    ];
+    if (imp.obrasSociales) parts.push(`🪪 Obras Sociales: <strong>${imp.obrasSociales}</strong>`);
+    if (imp.especialidades) parts.push(`✨ Especialidades: <strong>${imp.especialidades}</strong>`);
+
+    box.innerHTML = `
+      <div class="alert alert-success">
+        <strong>✅ ¡Datos importados correctamente (${res.format === 'xlsx' ? 'Excel .xlsx' : 'Respaldo .json'})!</strong><br />
+        ${parts.join(' &nbsp;•&nbsp; ')}
+      </div>`;
+    input.value = '';
+    await refreshAll();
+  } catch (err) {
+    box.innerHTML = `<div class="alert alert-error">❌ ${escapeHtml(err.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '📥 Importar Datos Ahora';
+  }
+});
+
 // Actualización silenciosa de la agenda cada 15 segundos para ver cambios de WhatsApp en tiempo real
 setInterval(() => {
   if (!currentUser) return;
@@ -2515,7 +3088,8 @@ setInterval(() => {
     !$('patientSearchModal').classList.contains('hidden') ||
     !$('recetariosModal').classList.contains('hidden') ||
     !$('scheduleModal').classList.contains('hidden') ||
-    !$('databaseModal').classList.contains('hidden');
+    !$('databaseModal').classList.contains('hidden') ||
+    !$('importDataModal').classList.contains('hidden');
   if (anyModalOpen) return;
   loadAppointments().catch(() => {});
 }, 15000);
