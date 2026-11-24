@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Portal de Agendas y Administración</title>
   <link rel="stylesheet" href="/css/styles.css" />
-  <link rel="stylesheet" href="/css/admin-dark.css" />
   <style>
     .login-shell {
       min-height: 100vh;
@@ -45,6 +44,7 @@
       color: #115e59;
     }
   </style>
+  <link rel="stylesheet" href="/css/admin-dark.css" />
 </head>
 <body>
   <!-- ========================================================
@@ -84,8 +84,9 @@
        VISTA 2: PORTAL AUTENTICADO (ADMIN GENERAL O MI AGENDA)
        ======================================================== -->
   <div id="portalView" class="hidden">
-    <header class="topbar">
-      <div class="topbar-inner">
+    <header class="sicap-topbar">
+      <!-- Fila 1: Identidad clínica + Estado en vivo -->
+      <div class="sicap-header-row">
         <div class="brand">
           <div class="brand-icon">🏥</div>
           <div class="brand-text">
@@ -94,19 +95,255 @@
           </div>
         </div>
         <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-          <button class="btn btn-primary btn-sm" id="openPatientsSearchBtn" type="button">📝 Historias</button>
-          <button class="btn btn-success btn-sm" id="openRecetariosTopBtn" type="button">💊 Recetarios</button>
-          <button class="btn btn-warning btn-sm" id="openDatabaseModalBtn" type="button" style="background:#0284c7;">📊 Base de Datos / Excel</button>
+          <span class="badge badge-demo" id="gcalBadge">📅 Google Calendar: cargando...</span>
+          <span class="badge badge-demo admin-only" id="waBadge">💬 WhatsApp: cargando...</span>
           <span class="role-pill" id="userRolePill">Usuario</span>
-          <button class="btn btn-secondary btn-sm" id="togglePasswordBoxBtn" type="button">🔑 Mi clave</button>
-          <button class="btn btn-danger btn-sm" id="logoutBtn" type="button">🚪 Salir</button>
         </div>
       </div>
+
+      <!-- Fila 2: Menú horizontal desplegable estilo SICAP -->
+      <nav class="sicap-menubar" id="sicapMenuBar" aria-label="Navegación principal">
+        <div class="sicap-nav-group">
+          <!-- 1. TURNOS WEB (Principal) -->
+          <div class="sicap-menu active-group" data-menu-group="turnos-web">
+            <button type="button" class="sicap-menu-trigger">
+              <span>🌐 Turnos Web</span>
+              <span class="caret">▼</span>
+            </button>
+            <div class="sicap-dropdown">
+              <button type="button" class="sicap-dropdown-item active admin-only" data-go-view="otorgar">
+                <span>📅 Otorgar Turnos (Principal)</span>
+              </button>
+              <button type="button" class="sicap-dropdown-item" data-go-view="overview">
+                <span>📋 Gestión General de Agendas</span>
+              </button>
+              <button type="button" class="sicap-dropdown-item admin-only" data-go-view="links">
+                <span>🔗 Links para compartir y Cartel QR</span>
+              </button>
+              <div class="sicap-dropdown-sep"></div>
+              <a class="sicap-dropdown-item" href="/" target="_blank" rel="noopener">
+                <span>🌐 Abrir Turnero Web (Pacientes)</span>
+              </a>
+              <a class="sicap-dropdown-item" href="/bot" target="_blank" rel="noopener">
+                <span>💬 Bot de WhatsApp (Pacientes)</span>
+              </a>
+              <a class="sicap-dropdown-item admin-only" href="/qr-clinica" target="_blank" rel="noopener">
+                <span>🖨️ Cartel QR para Recepción</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- 2. AGENDAS Y TURNOS -->
+          <div class="sicap-menu" data-menu-group="agendas">
+            <button type="button" class="sicap-menu-trigger">
+              <span>📅 Agendas y Turnos</span>
+              <span class="sicap-badge-mini hidden admin-only" id="menuPendingReqDot">0</span>
+              <span class="caret">▼</span>
+            </button>
+            <div class="sicap-dropdown">
+              <button type="button" class="sicap-dropdown-item" data-go-view="turnos">
+                <span>📅 Todos los Turnos</span>
+              </button>
+              <button type="button" class="sicap-dropdown-item" data-go-view="bloqueos">
+                <span>🔴 Bloquear horarios o días (Ausencias / Vacaciones)</span>
+              </button>
+              <div class="sicap-dropdown-sep admin-only"></div>
+              <button type="button" class="sicap-dropdown-item admin-only" data-go-view="profesionales">
+                <span>👨‍⚕️ Profesionales, Horarios de Atención y Google Calendar</span>
+              </button>
+              <button type="button" class="sicap-dropdown-item admin-only" data-go-view="solicitudes">
+                <span>📬 Solicitudes de Horarios de Profesionales</span>
+                <span class="sicap-badge-mini hidden" id="menuPendingReqCount">0</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. ATENCIÓN CLÍNICA -->
+          <div class="sicap-menu" data-menu-group="clinica">
+            <button type="button" class="sicap-menu-trigger">
+              <span>🩺 Atención Clínica</span>
+              <span class="caret">▼</span>
+            </button>
+            <div class="sicap-dropdown">
+              <button type="button" class="sicap-dropdown-item" id="openPatientsSearchBtn">
+                <span>📝 Historias Clínicas</span>
+              </button>
+              <button type="button" class="sicap-dropdown-item" id="openRecetariosTopBtn">
+                <span>💊 Recetarios Electrónicos</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4. BASE DE DATOS E IMPORTACIÓN -->
+          <div class="sicap-menu" data-menu-group="datos">
+            <button type="button" class="sicap-menu-trigger">
+              <span>📊 Base de Datos</span>
+              <span class="caret">▼</span>
+            </button>
+            <div class="sicap-dropdown">
+              <button type="button" class="sicap-dropdown-item" id="openDatabaseModalBtn">
+                <span>📊 Base de Datos / Exportar Excel</span>
+              </button>
+              <button type="button" class="sicap-dropdown-item admin-only" id="openImportModalBtn">
+                <span>📥 Importar Datos / Respaldo</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 5. CONFIGURACIÓN (SOLO ADMIN) -->
+          <div class="sicap-menu admin-only" data-menu-group="config">
+            <button type="button" class="sicap-menu-trigger">
+              <span>⚙️ Configuración</span>
+              <span class="caret">▼</span>
+            </button>
+            <div class="sicap-dropdown">
+              <button type="button" class="sicap-dropdown-item" data-go-view="usuarios">
+                <span>👥 Usuarios y Administradores de Agendas</span>
+              </button>
+              <button type="button" class="sicap-dropdown-item" data-go-view="clinica">
+                <span>🏥 Nombre y datos de tu clínica</span>
+              </button>
+              <button type="button" class="sicap-dropdown-item" data-go-view="obras">
+                <span>🪪 Obras Sociales y Prepagas</span>
+              </button>
+              <div class="sicap-dropdown-sep"></div>
+              <button type="button" class="sicap-dropdown-item" data-go-view="google">
+                <span>🔗 Conexión con Google Calendar</span>
+              </button>
+              <button type="button" class="sicap-dropdown-item" data-go-view="whatsapp">
+                <span>📱 Conectar WhatsApp Real (Recordatorios 24 hs automáticos)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- AL FINAL: MI CLAVE Y POR ÚLTIMO SALIR -->
+        <div class="sicap-nav-right">
+          <button class="btn btn-secondary btn-sm" id="togglePasswordBoxBtn" type="button">🔑 Mi Clave</button>
+          <button class="btn btn-danger btn-sm" id="logoutBtn" type="button">🚪 Salir</button>
+        </div>
+      </nav>
     </header>
 
     <main class="container container-wide">
+      <!-- Barra de ubicación actual (indica en qué panel estás sin scrollear) -->
+      <div class="sicap-breadcrumb" id="sicapBreadcrumb">
+        <span>📍 Sección actual: <strong id="sicapCurrentTitle">Otorgar Turnos</strong></span>
+        <button type="button" class="btn btn-secondary btn-sm hidden" id="sicapBackHomeBtn">← Volver a Otorgar Turnos</button>
+      </div>
+
+      <div id="adminAlert"></div>
+
+      <!-- ========================================================
+           PANTALLA PRINCIPAL DE RECEPCIÓN: OTORGAR TURNOS (RECUADROS)
+           ======================================================== -->
+      <section id="grantAppointmentSection" class="admin-only" data-view-panel="otorgar">
+        <div class="hero" style="margin-bottom:16px;">
+          <h1 style="font-size:clamp(22px,2.5vw,28px); margin-bottom:4px;">📅 Otorgar Turnos</h1>
+          <p style="font-size:14px;">Elegí el profesional o la especialidad, el día y la hora. Cada turno se sincroniza automáticamente con Google Calendar y WhatsApp.</p>
+        </div>
+
+        <div class="tabs" style="margin-bottom:16px;">
+          <button type="button" class="tab-btn active" id="otModeDoctorsBtn">👨‍⚕️ Todos los Profesionales</button>
+          <button type="button" class="tab-btn" id="otModeSpecsBtn">🩺 Por Especialidad</button>
+          <button type="button" class="tab-btn" id="otGoAllTurnsBtn">📋 Ver Todos los Turnos</button>
+        </div>
+
+        <div class="stepper" id="otStepper" style="margin-bottom:18px;">
+          <div class="step-item active" data-ot-step="1"><span class="step-num">1</span><span>Profesional / Especialidad</span></div>
+          <div class="step-item" data-ot-step="2"><span class="step-num">2</span><span>Día y hora</span></div>
+          <div class="step-item" data-ot-step="3"><span class="step-num">3</span><span>Datos del paciente</span></div>
+          <div class="step-item" data-ot-step="4"><span class="step-num">4</span><span>Confirmado</span></div>
+        </div>
+
+        <div id="otAlert"></div>
+
+        <!-- PASO 1: RECUADROS DE TODOS LOS PROFESIONALES O ESPECIALIDADES -->
+        <div class="card" id="otStep1">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <div>
+              <h2 class="card-title" id="otStep1Title" style="margin:0;">1. Elegí el profesional para otorgar un turno</h2>
+              <p class="card-sub" id="otStep1Sub" style="margin:4px 0 0;">Tocá el recuadro del profesional para ver sus días y horarios disponibles en tiempo real.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm hidden" id="otBackToSpecsBtn">← Ver todas las especialidades</button>
+          </div>
+
+          <div class="field" style="margin-bottom:14px;">
+            <input id="otSearchInput" type="search" placeholder="🔍 Buscar profesional o especialidad (ej: Dra. Gómez, Cardiología, Pediatría...)" />
+          </div>
+
+          <div id="otCardsGrid" class="grid-3">Cargando profesionales...</div>
+        </div>
+
+        <!-- PASO 2: DÍA Y HORA DISPONIBLES -->
+        <div class="card hidden" id="otStep2">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <div>
+              <h2 class="card-title" id="otStep2Title" style="margin:0;">2. Elegí el día y el horario</h2>
+              <p class="card-sub" id="otStep2Sub" style="margin:4px 0 0;"></p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="otBackToStep1Btn">← Cambiar profesional</button>
+          </div>
+
+          <div id="otDaysStrip" class="days-strip"></div>
+          <div id="otSlotsContainer"></div>
+        </div>
+
+        <!-- PASO 3: DATOS DEL PACIENTE -->
+        <div class="card hidden" id="otStep3">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
+            <h2 class="card-title" style="margin:0;">3. Datos del paciente</h2>
+            <button type="button" class="btn btn-secondary btn-sm" id="otBackToStep2Btn">← Cambiar horario</button>
+          </div>
+
+          <div id="otSelectionSummary" class="summary-box"></div>
+
+          <form id="otBookingForm">
+            <div class="form-grid" style="margin-bottom:14px;">
+              <div class="field">
+                <label for="otDni">DNI del paciente *</label>
+                <input id="otDni" type="text" inputmode="numeric" placeholder="Sin puntos (ej: 30123456)" required />
+                <div class="hint" id="otDniHint">Si ya vino antes, sus datos se completan solos.</div>
+              </div>
+              <div class="field">
+                <label for="otName">Nombre y Apellido *</label>
+                <input id="otName" type="text" placeholder="Ej: María López" required />
+              </div>
+              <div class="field">
+                <label for="otPhone">WhatsApp del paciente *</label>
+                <input id="otPhone" type="tel" placeholder="Ej: 3476582815" required />
+              </div>
+              <div class="field">
+                <label for="otObraSocial">Obra Social / Prepaga</label>
+                <select id="otObraSocial"></select>
+              </div>
+              <div class="field" style="grid-column: 1 / -1;">
+                <label for="otNotes">Observación o motivo breve (opcional)</label>
+                <input id="otNotes" type="text" placeholder="Ej: Primera vez, trae estudios, control..." />
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-secondary" id="otCancelFlowBtn">Cancelar</button>
+              <button type="submit" class="btn btn-primary" id="otSubmitBtn">✅ Otorgar y Confirmar Turno</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- PASO 4: TURNO OTORGADO -->
+        <div class="card hidden" id="otStep4">
+          <div class="alert alert-success" style="font-size:15px;">
+            🎉 <strong>¡Turno otorgado correctamente!</strong> Se guardó en la agenda, Google Calendar y se notificó al paciente por WhatsApp.
+          </div>
+          <div id="otSuccessSummary" class="summary-box"></div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:14px;">
+            <button type="button" class="btn btn-primary" id="otNewBookingBtn">➕ Otorgar otro turno</button>
+            <button type="button" class="btn btn-secondary" id="otSuccessGoListBtn">📅 Ver Todos los Turnos</button>
+          </div>
+        </div>
+      </section>
+
       <!-- Cambiar mi propia contraseña -->
-      <section class="card hidden" id="changePasswordCard">
+      <section class="card hidden" id="changePasswordCard" data-view-panel="clave">
         <h3 class="card-title" style="font-size:17px;">🔑 Cambiar mi contraseña</h3>
         <form id="changePasswordForm" class="form-grid" style="align-items:end;">
           <div class="field">
@@ -125,7 +362,7 @@
       </section>
 
       <!-- Banner exclusivo para Médicos (Administradores de su propia agenda) -->
-      <section class="card hidden" id="doctorWelcomeBanner" style="background:#f0fdfa; border-color:#99f6e4;">
+      <section class="card hidden" id="doctorWelcomeBanner" data-view-panel="overview" style="background:#f0fdfa; border-color:#99f6e4;">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
           <div>
             <h2 class="card-title" style="margin:0;" id="doctorBannerTitle">Mi Agenda</h2>
@@ -142,33 +379,29 @@
         </div>
       </section>
 
-      <!-- Encabezado y badges -->
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
-        <div>
-          <h1 style="margin:0; font-size:26px;" id="dashboardHeading">Gestión de Turnos y Agendas</h1>
-          <p style="margin:4px 0 0; color:#475569; font-size:14px;">
-            Cada cambio actualiza automáticamente Google Calendar.
-          </p>
+      <!-- Encabezado y métricas (Vista principal: Gestión General de Agendas) -->
+      <div data-view-panel="overview">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+          <div>
+            <h1 style="margin:0; font-size:24px;" id="dashboardHeading">Gestión General de Agendas</h1>
+            <p style="margin:4px 0 0; color:#475569; font-size:13.5px;">
+              Usá los menús desplegables de arriba para pasar directo a cada sección sin recorrer la pantalla.
+            </p>
+          </div>
         </div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <span class="badge badge-demo" id="gcalBadge">📅 Google Calendar: cargando...</span>
-          <span class="badge badge-demo admin-only" id="waBadge">💬 WhatsApp: cargando...</span>
-        </div>
+
+        <!-- Métricas -->
+        <section class="stats-grid">
+          <div class="stat-card"><span>Turnos hoy</span><strong id="statHoy">-</strong></div>
+          <div class="stat-card"><span>Confirmados (próximos)</span><strong id="statConfirmados" style="color:#15803d;">-</strong></div>
+          <div class="stat-card"><span>Sin confirmar</span><strong id="statPendientes" style="color:#b45309;">-</strong></div>
+          <div class="stat-card admin-only"><span>Profesionales activos</span><strong id="statDocs">-</strong></div>
+        </section>
       </div>
 
-      <!-- Métricas -->
-      <section class="stats-grid">
-        <div class="stat-card"><span>Turnos hoy</span><strong id="statHoy">-</strong></div>
-        <div class="stat-card"><span>Confirmados (próximos)</span><strong id="statConfirmados" style="color:#15803d;">-</strong></div>
-        <div class="stat-card"><span>Sin confirmar</span><strong id="statPendientes" style="color:#b45309;">-</strong></div>
-        <div class="stat-card admin-only"><span>Profesionales activos</span><strong id="statDocs">-</strong></div>
-      </section>
-
-      <div id="adminAlert"></div>
-
       <!-- Links limpios para compartir (SOLO ADMIN) -->
-      <section class="card admin-only" style="background:#f0f9ff; border-color:#bae6fd;">
-        <h2 class="card-title" style="margin:0 0 6px; font-size:18px;">🔗 Links para compartir</h2>
+      <section class="card admin-only" id="linksShareSection" data-view-panel="links" style="background:#f0f9ff; border-color:#bae6fd;">
+        <h2 class="card-title" style="margin:0 0 6px; font-size:18px;">🔗 Links para compartir y Cartel QR</h2>
         <p class="card-sub" style="margin-bottom:12px;">
           Compartí el link del <strong>Bot</strong> con tus pacientes, y el link de <strong>Alta de Profesionales</strong> con médicos nuevos o que cambien sus días/horarios.
         </p>
@@ -183,7 +416,7 @@
       </section>
 
       <!-- Solicitudes de Horarios enviadas por Profesionales (SOLO ADMIN) -->
-      <section class="card admin-only" id="scheduleRequestsCard">
+      <section class="card admin-only" id="scheduleRequestsCard" data-view-panel="solicitudes">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
           <h2 class="card-title" style="margin:0;">📬 Solicitudes de Horarios de Profesionales</h2>
           <span class="badge badge-demo" id="pendingReqBadge">0 pendientes</span>
@@ -195,7 +428,7 @@
       </section>
 
       <!-- Tabla de Turnos (Todos para Admin / Propios para Médico) -->
-      <section class="card">
+      <section class="card" id="appointmentsSection" data-view-panel="overview turnos">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
           <h2 class="card-title" style="margin:0;" id="apptsCardTitle">📅 Turnos Agendados</h2>
           <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -239,7 +472,7 @@
       </section>
 
       <!-- Bloqueos de Agenda (Admin: cualquier médico / Médico: su propia agenda) -->
-      <section class="card">
+      <section class="card" id="blocksSection" data-view-panel="bloqueos">
         <h2 class="card-title">🔴 Bloquear horarios o días (Ausencias / Vacaciones)</h2>
         <p class="card-sub">
           Crea un evento rojo <strong>NO ATIENDE</strong> en Google Calendar para que el Bot deje de ofrecer esos horarios automáticamente.
@@ -279,7 +512,7 @@
            ======================================================= -->
 
       <!-- Gestión de Usuarios y Administradores de Agenda -->
-      <section class="card admin-only">
+      <section class="card admin-only" id="usersSection" data-view-panel="usuarios">
         <h2 class="card-title">👥 Usuarios y Administradores de Agendas</h2>
         <p class="card-sub">
           Creá cuentas con usuario y contraseña para otros <strong>Administradores Generales</strong> (ven toda la clínica) o para cada <strong>Profesional</strong> (solo administra su propia agenda).
@@ -332,7 +565,7 @@
       </section>
 
       <!-- Datos y Nombre de la Clínica -->
-      <section class="card admin-only">
+      <section class="card admin-only" id="clinicSection" data-view-panel="clinica">
         <h2 class="card-title" style="margin:0 0 6px;">🏥 Nombre y datos de tu clínica</h2>
         <p class="card-sub">Lo que guardes acá se muestra al instante en el Bot de WhatsApp, Turnero Web y comprobantes.</p>
         <form id="clinicSettingsForm" class="form-grid" style="align-items:end;">
@@ -355,7 +588,7 @@
       </section>
 
       <!-- Gestión de Obras Sociales y Prepagas (aparecen en Web y Bot) -->
-      <section class="card admin-only">
+      <section class="card admin-only" id="obrasSection" data-view-panel="obras">
         <h2 class="card-title" style="margin:0 0 6px;">🪪 Obras Sociales y Prepagas</h2>
         <p class="card-sub">
           Agregá o quitá coberturas médicas. Lo que cargues acá aparece automáticamente para que los pacientes elijan tanto en el <strong>Turnero Web</strong> como en el <strong>Bot de WhatsApp</strong>.
@@ -375,7 +608,7 @@
       </section>
 
       <!-- Conectar Google Calendar en vivo -->
-      <section class="card admin-only" id="googleSetupCard">
+      <section class="card admin-only" id="googleSetupCard" data-view-panel="google">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
           <h2 class="card-title" style="margin:0;">🔗 Conexión con Google Calendar</h2>
           <span class="badge badge-demo" id="googleSetupBadge">Sin credenciales</span>
@@ -418,7 +651,7 @@
       </section>
 
       <!-- Conectar WhatsApp Real (Código QR en 10 segundos — SIN Meta) -->
-      <section class="card admin-only" id="waSetupCard">
+      <section class="card admin-only" id="waSetupCard" data-view-panel="whatsapp">
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
           <h2 class="card-title" style="margin:0;">📱 Conectar WhatsApp Real (Recordatorios 24 hs automáticos)</h2>
           <span class="badge badge-demo" id="waSetupBadge">Desconectado</span>
@@ -519,7 +752,7 @@
       </section>
 
       <!-- Profesionales y Google Calendar IDs -->
-      <section class="card admin-only">
+      <section class="card admin-only" id="doctorsSection" data-view-panel="profesionales">
         <h2 class="card-title">👨‍⚕️ Profesionales, Horarios de Atención y Google Calendar</h2>
         <p class="card-sub">
           Tocá <strong>🗓️ Horarios</strong> en cualquier profesional para cargar los días y horarios en los que atiende (y cuánto dura cada turno). El Bot y el Turnero Web ofrecen turnos automáticamente según lo que cargues acá.
@@ -1122,6 +1355,54 @@
 
           <div id="dbAttentionsList">Cargando atenciones...</div>
         </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       MODAL 6: IMPORTAR DATOS Y RESPALDO DE SEGURIDAD (.json / .xlsx)
+       ======================================================== -->
+  <div id="importDataModal" class="modal-backdrop hidden">
+    <div class="modal-panel" style="width:min(680px, 100%);">
+      <div class="modal-header" style="background:#0f766e;">
+        <div>
+          <h2>📥 Importar Datos y Respaldo de Seguridad</h2>
+          <div style="font-size:12px; opacity:.9;">
+            Guardá copias de seguridad y recuperá pacientes, profesionales, horarios, turnos y atenciones en 1 clic
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="closeImportModalBtn">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="summary-box" style="margin-bottom:16px;">
+          <h3 style="margin:0 0 6px; font-size:15px;">💾 1. Guardar copia de respaldo (recomendado)</h3>
+          <p style="margin:0 0 10px; font-size:13px;">
+            Bajá un archivo de <strong>Respaldo Completo (.json)</strong> con todos los datos de la clínica (pacientes, médicos, horarios, turnos, atenciones, copagos, obras sociales y recetarios) para guardarlo seguro en tu compu, pendrive o Google Drive.
+          </p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <a href="/api/admin/backup/export" class="btn btn-success btn-sm" id="downloadJsonBackupBtn">💾 Descargar Respaldo Completo (.json)</a>
+            <a href="/api/panel/export/excel?type=completo" class="btn btn-primary btn-sm">📊 Descargar Excel Completo (.xlsx)</a>
+          </div>
+        </div>
+
+        <div class="summary-box" style="margin-bottom:14px;">
+          <h3 style="margin:0 0 6px; font-size:15px;">📥 2. Importar / Recuperar datos desde un archivo</h3>
+          <p style="margin:0 0 12px; font-size:13px;">
+            Si hubo algún problema o se borraron archivos, elegí tu archivo de respaldo <strong>.json</strong> o un archivo de <strong>Excel (.xlsx)</strong> exportado desde este sistema. El sistema recupera los registros sin duplicarlos.
+          </p>
+          <div class="form-grid" style="align-items:end;">
+            <div class="field">
+              <label for="importDataFileInput">Seleccionar archivo (.json o .xlsx)</label>
+              <input id="importDataFileInput" type="file" accept=".json,.xlsx,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+            </div>
+            <div>
+              <button type="button" class="btn btn-primary" id="importDataSubmitBtn" style="width:100%;">📥 Importar Datos Ahora</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="importDataResult"></div>
       </div>
     </div>
   </div>
