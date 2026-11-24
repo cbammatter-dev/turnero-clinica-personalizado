@@ -12,6 +12,40 @@ import { db } from '../db/database.js';
 import { normalizePhone } from '../utils/datetime.js';
 
 const AUTH_DIR = path.join(config.dataDir, 'whatsapp-auth');
+// Marca invisible (zero-width) agregada a cada mensaje del bot para impedir bucles
+// incluso si el mismo WhatsApp llegara a estar vinculado en dos servidores a la vez.
+const BOT_WATERMARK = '\u200B\u200C\u200D';
+const BOT_OUTPUT_MARKERS = [
+  '👇 *Respondé con el número de la opción:*',
+  '✅ *¡Prueba exitosa desde',
+  'No entendí esa opción 😅',
+  'Parece que hubo un inconveniente con ese dato 😅',
+  'Ingresá un DNI válido (solo números, sin puntos).',
+  'Te recordamos tu turno en *',
+  '✅ *¡Turno confirmado en ',
+  '🎉 *¡Listo,',
+  'No encontré turnos vigentes para el DNI',
+];
+const selfChatTimestamps = [];
+
+function isBotGeneratedMessage(text, msgKey) {
+  if (!text) return false;
+  if (text.includes(BOT_WATERMARK)) return true;
+  if (BOT_OUTPUT_MARKERS.some((m) => text.includes(m))) return true;
+  // Los IDs generados por clientes Baileys empiezan con "3EB0"; los del celular real no.
+  if (msgKey?.fromMe && /^3EB0/i.test(String(msgKey.id || ''))) return true;
+  return false;
+}
+
+function isSelfChatRateLimited() {
+  const now = Date.now();
+  while (selfChatTimestamps.length > 0 && now - selfChatTimestamps[0] > 60_000) {
+    selfChatTimestamps.shift();
+  }
+  if (selfChatTimestamps.length >= 12) return true;
+  selfChatTimestamps.push(now);
+  return false;
+}
 
 let sock = null;
 let status = 'disconnected'; // disconnected | connecting | qr | connected
@@ -285,8 +319,10 @@ export async function sendViaQrWhatsApp(phone, text, actions = []) {
   }
   try {
     const jid = await resolveWhatsAppJid(phone);
+    const rawText = String(text || '');
+    const taggedText = rawText.endsWith(BOT_WATERMARK) ? rawText : `${rawText}${BOT_WATERMARK}`;
     const sentMsg = await withTimeout(
-      sock.sendMessage(jid, { text }),
+      sock.sendMessage(jid, { text: taggedText }),
       15_000,
       'sendMessage'
     );
@@ -482,6 +518,15 @@ export async function startQrWhatsApp({ forceNew = false } = {}) {
           '';
 
         if (!text.trim()) continue;
+
+        // 3) Protección antibucle definitiva: nunca responder a mensajes generados por otro bot/servidor
+        if (isBotGeneratedMessage(text, msg.key)) continue;
+
+        // 4) Cortocircuito de seguridad en auto-chat (máx. 12 respuestas por minuto)
+        if (selfChat && isSelfChatRateLimited()) {
+          console.log('[WhatsApp QR] 🛡️ Protección antibucle activada en auto-chat (pausa 60s).');
+          continue;
+        }
 
         const quotedStanzaId =
           msg.message.extendedTextMessage?.contextInfo?.stanzaId || null;
