@@ -202,8 +202,8 @@ async function init() {
 
   $('reqSpec').innerHTML =
     specRes.specialties
-      .map((s) => `<option value="${s.id}">${escapeHtml(s.icono)} ${escapeHtml(s.nombre)}</option>`)
-      .join('') + `<option value="__new__">➕ Otra especialidad (escribir)</option>`;
+      .map((s) => `<option value="${s.id}">${escapeHtml(s.nombre)}</option>`)
+      .join('') + `<option value="__new__">+ Otra especialidad (escribir)</option>`;
 
   $('reqExistingDoctor').innerHTML = docRes.doctors
     .map(

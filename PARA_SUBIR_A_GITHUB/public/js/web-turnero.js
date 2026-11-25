@@ -128,7 +128,7 @@ function renderSpecialties(query = '') {
     .map(
       (s) => `
       <button type="button" class="option-card" data-specialty-id="${s.id}">
-        <span class="option-icon">${escapeHtml(s.icono)}</span>
+        <span class="option-icon">${window.ClinicalIcons ? window.ClinicalIcons.render(s.nombre, 'card') : escapeHtml(s.icono)}</span>
         <span class="option-title">${escapeHtml(s.nombre)}</span>
         <span class="option-desc">${escapeHtml(s.descripcion || '')}</span>
         <span class="option-desc" style="margin-top:4px; font-weight:600; color:${
@@ -176,7 +176,7 @@ async function selectSpecialty(specialtyId) {
   grid.innerHTML =
     `
     <button type="button" class="option-card featured" data-doctor-id="any">
-      <span class="option-icon">⚡</span>
+      <span class="option-icon">${window.ClinicalIcons ? window.ClinicalIcons.render('fast-slot', 'card') : '⚡'}</span>
       <span class="option-title">Primer turno disponible</span>
       <span class="option-desc">Te mostramos todos los horarios más cercanos de ${escapeHtml(state.selectedSpecialty.nombre)}.</span>
     </button>

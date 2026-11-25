@@ -24,6 +24,13 @@ function renderIconPalette(containerId, inputId) {
   });
 }
 
+function renderClinicalIcon(specialtyName, variant = 'card') {
+  if (window.ClinicalIcons && typeof window.ClinicalIcons.render === 'function') {
+    return window.ClinicalIcons.render(specialtyName, variant);
+  }
+  return '';
+}
+
 function escapeHtml(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;')
@@ -281,9 +288,9 @@ async function loadSpecialtiesAndDoctors(selectSpecialtyId = null) {
   const prevSpecVal = selectSpecialtyId ? String(selectSpecialtyId) : $('docSpec').value;
   $('docSpec').innerHTML =
     specialties
-      .map((s) => `<option value="${s.id}">${escapeHtml(s.icono)} ${escapeHtml(s.nombre)}</option>`)
+      .map((s) => `<option value="${s.id}">${escapeHtml(s.nombre)}</option>`)
       .join('') +
-    `<option value="__new__">➕ Crear nueva especialidad...</option>`;
+    `<option value="__new__">+ Crear nueva especialidad...</option>`;
 
   if (prevSpecVal && prevSpecVal !== '__new__' && [...$('docSpec').options].some((o) => o.value === prevSpecVal)) {
     $('docSpec').value = prevSpecVal;
@@ -324,7 +331,7 @@ async function loadSpecialtiesAndDoctors(selectSpecialtyId = null) {
           <strong>${escapeHtml(d.nombre)}</strong><br />
           <small style="color:#64748b;">Turnos de ${d.duracion_turno_min} min</small>
         </td>
-        <td>${escapeHtml(d.especialidad_icono)} ${escapeHtml(d.especialidad_nombre)}</td>
+        <td><span class="clinical-spec-inline">${renderClinicalIcon(d.especialidad_nombre, 'inline')}<span>${escapeHtml(d.especialidad_nombre)}</span></span></td>
         <td style="font-size:12px; line-height:1.45; min-width:140px;">${summarizeHorarios(d.horarios)}</td>
         <td><input type="text" value="${escapeHtml(d.consultorio)}" data-edit-room="${d.id}" style="padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; width:165px;" /></td>
         <td><input type="text" value="${escapeHtml(d.google_calendar_id)}" data-edit-gcal="${d.id}" style="padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; width:210px;" /></td>
@@ -1846,7 +1853,7 @@ async function openScheduleModal(doctorId) {
   try {
     const { doctor, horarios, especiales } = await api(`/api/admin/doctors/${doctorId}/schedule`);
     $('scheduleModalTitle').textContent = `🗓️ Horarios — ${doctor.nombre}`;
-    $('scheduleModalSub').textContent = `${doctor.especialidad_icono} ${doctor.especialidad_nombre} • ${doctor.consultorio}`;
+    $('scheduleModalSub').textContent = `${doctor.especialidad_nombre} • ${doctor.consultorio}`;
     $('schedDuration').value = String(doctor.duracion_turno_min || 30);
 
     scheduleStateByDay = {};
@@ -2019,7 +2026,7 @@ async function loadScheduleRequests() {
             <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap; margin-bottom:6px;">
               <div>
                 <strong style="font-size:16px;">${escapeHtml(r.nombre)}</strong>
-                <span style="font-size:13px; color:#475569;"> — ${escapeHtml(r.especialidad_icono)} ${escapeHtml(r.especialidad_nombre)}</span>
+                <span style="font-size:13px; color:#475569;"> — <span class="clinical-spec-inline">${renderClinicalIcon(r.especialidad_nombre, 'inline')}<span>${escapeHtml(r.especialidad_nombre)}</span></span></span>
                 <div style="font-size:12px; color:#0f766e; font-weight:700; margin-top:2px;">
                   ${r.tipo === 'cambio_horario' ? '🔄 Solicita cambio de horarios' : '🆕 Profesional nuevo'} • Turnos de ${r.duracion_turno_min} min
                 </div>
@@ -2272,7 +2279,7 @@ async function openDatabaseModal(initialTab = 'patients', editPatient = null) {
   $('repOs').innerHTML = `<option value="">Todas las Obras Sociales</option>${osOpts}`;
 
   $('dbDocSpec').innerHTML = (specRes.specialties || [])
-    .map((s) => `<option value="${s.id}">${escapeHtml(s.icono)} ${escapeHtml(s.nombre)}</option>`)
+    .map((s) => `<option value="${s.id}">${escapeHtml(s.nombre)}</option>`)
     .join('');
 
   $('repDoctor').innerHTML =
@@ -2412,7 +2419,7 @@ async function loadDbDoctors() {
       <div class="appt-item" style="margin-bottom:10px; padding:12px;">
         <div style="flex:1; min-width:240px;">
           <strong style="font-size:16px;">${escapeHtml(d.nombre)}</strong>
-          <span class="badge badge-demo" style="margin-left:6px;">${escapeHtml(d.especialidad_icono)} ${escapeHtml(d.especialidad_nombre)}</span>
+          <span class="badge badge-demo" style="margin-left:6px;"><span class="clinical-spec-inline">${renderClinicalIcon(d.especialidad_nombre, 'inline')}<span>${escapeHtml(d.especialidad_nombre)}</span></span></span>
           <div style="font-size:13px; color:#334155; margin-top:4px;">
             🪪 DNI: <strong>${escapeHtml(d.dni || 'Sin cargar')}</strong>
             • 🎂 F. Nac.: <strong>${escapeHtml(d.fecha_nacimiento || 'Sin cargar')}</strong>
@@ -2738,7 +2745,7 @@ function renderOtorgarCards() {
         const count = cachedDoctors.filter((d) => d.especialidad_id === s.id).length;
         return `
           <button type="button" class="option-card" data-ot-spec="${s.id}">
-            <div class="option-icon">${escapeHtml(s.icono || '🩺')}</div>
+            <div class="option-icon">${renderClinicalIcon(s.nombre, 'card')}</div>
             <div class="option-title">${escapeHtml(s.nombre)}</div>
             <div class="option-desc">${escapeHtml(s.descripcion || '')}</div>
             <div style="font-size:12px; color:#5eead4; font-weight:700; margin-top:4px;">
@@ -2765,7 +2772,7 @@ function renderOtorgarCards() {
     : cachedDoctors;
 
   if (otState.selectedSpecialty) {
-    $('otStep1Title').textContent = `1. Profesionales de ${otState.selectedSpecialty.icono || ''} ${otState.selectedSpecialty.nombre}`;
+    $('otStep1Title').textContent = `1. Profesionales de ${otState.selectedSpecialty.nombre}`;
     $('otStep1Sub').textContent = 'Tocá el recuadro del profesional para ver sus días y horarios disponibles.';
     $('otBackToSpecsBtn')?.classList.remove('hidden');
   } else {
@@ -2796,11 +2803,13 @@ function renderOtorgarCards() {
         : 'Sin horarios cargados';
       return `
         <button type="button" class="option-card" data-ot-doc="${d.id}">
-          <div class="option-icon">${escapeHtml(d.especialidad_icono || '🩺')}</div>
+          <div class="option-icon">${renderClinicalIcon(d.especialidad_nombre, 'card')}</div>
           <div class="option-title">${escapeHtml(d.nombre)}</div>
           <div class="option-desc"><strong>${escapeHtml(d.especialidad_nombre)}</strong> • ${escapeHtml(d.consultorio || '')}</div>
-          <div style="font-size:12px; color:#5eead4; font-weight:600; margin-top:4px;">
-            🗓️ ${escapeHtml(daysTxt)} • ⏱️ ${d.duracion_turno_min} min
+          <div style="font-size:12px; color:#5eead4; font-weight:600; margin-top:4px; display:flex; align-items:center; gap:5px; flex-wrap:wrap;">
+            ${renderClinicalIcon('calendar-mini', 'meta')}<span>${escapeHtml(daysTxt)}</span>
+            <span style="opacity:0.6;">•</span>
+            ${renderClinicalIcon('clock-mini', 'meta')}<span>${d.duracion_turno_min} min</span>
           </div>
         </button>`;
     })
@@ -2823,7 +2832,7 @@ async function openOtStep2ForDoctor(doc) {
   setOtStep(2);
 
   $('otStep2Title').textContent = `2. Elegí día y horario — ${doc.nombre}`;
-  $('otStep2Sub').textContent = `${doc.especialidad_icono || ''} ${doc.especialidad_nombre} • ${doc.consultorio || ''} • Turnos de ${doc.duracion_turno_min} min`;
+  $('otStep2Sub').textContent = `${doc.especialidad_nombre} • ${doc.consultorio || ''} • Turnos de ${doc.duracion_turno_min} min`;
   $('otDaysStrip').innerHTML = '<div style="color:#94a3b8;">Buscando días disponibles...</div>';
   $('otSlotsContainer').innerHTML = '';
 
