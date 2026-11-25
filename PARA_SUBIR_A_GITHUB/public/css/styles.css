@@ -1123,3 +1123,98 @@ th {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+ * ICONOGRAFÍA CLÍNICA VECTORIAL — PALETA TEAL INTEGRAL (MODO CLARO)
+ * ========================================================================== */
+.clinical-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  padding: 8px;
+  background: rgba(20, 184, 166, 0.10);
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  color: #0f766e;
+  --c-stroke: #0f766e;
+  --c-fill: rgba(15, 118, 110, 0.13);
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.option-card:hover .clinical-icon-badge,
+.option-card.selected .clinical-icon-badge {
+  background: rgba(20, 184, 166, 0.16);
+  border-color: rgba(15, 118, 110, 0.42);
+}
+
+.clinical-icon-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  vertical-align: -3px;
+  --c-stroke: #0f766e;
+  --c-fill: rgba(15, 118, 110, 0.14);
+  flex-shrink: 0;
+}
+
+.clinical-icon-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  vertical-align: -2px;
+  --c-stroke: currentColor;
+  --c-fill: transparent;
+  opacity: 0.9;
+  flex-shrink: 0;
+}
+
+.clinical-spec-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.clinical-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.clinical-svg .c-fill {
+  fill: var(--c-fill);
+  stroke: none;
+}
+
+.clinical-svg .c-stroke {
+  fill: none;
+  stroke: var(--c-stroke);
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.clinical-svg .c-thin {
+  fill: none;
+  stroke: var(--c-stroke);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.clinical-svg .c-dot {
+  fill: var(--c-stroke);
+  stroke: none;
+}
+
+.option-icon:has(.clinical-icon-badge) {
+  display: inline-flex;
+  margin-bottom: 6px;
+  line-height: 0;
+}

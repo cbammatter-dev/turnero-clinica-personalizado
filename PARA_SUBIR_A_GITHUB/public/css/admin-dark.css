@@ -815,4 +815,26 @@ input[type="checkbox"] {
   }
 }
 
+/* ==========================================================================
+ * ICONOGRAFÍA CLÍNICA VECTORIAL — PALETA TEAL INTEGRAL (MODO OSCURO)
+ * ========================================================================== */
+.clinical-icon-badge {
+  background: rgba(20, 184, 166, 0.12);
+  border-color: rgba(45, 212, 191, 0.28);
+  color: #2dd4bf;
+  --c-stroke: #2dd4bf;
+  --c-fill: rgba(45, 212, 191, 0.16);
+}
+
+.option-card:hover .clinical-icon-badge,
+.option-card.selected .clinical-icon-badge {
+  background: rgba(20, 184, 166, 0.20);
+  border-color: rgba(45, 212, 191, 0.55);
+}
+
+.clinical-icon-inline {
+  --c-stroke: #2dd4bf;
+  --c-fill: rgba(45, 212, 191, 0.18);
+}
+
 
